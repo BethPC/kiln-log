@@ -1,0 +1,1443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kiln Log</title>
+<meta name="apple-mobile-web-app-title" content="Kiln Log">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EFEEEC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222325" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Young+Serif&display=swap">
+<style>
+  :root {
+    --ground: #EFEEEC;
+    --surface: #FAFAF9;
+    --surface-2: #FFFFFF;
+    --ink: #3F4043;
+    --muted: #6B6D71;
+    --line: #DCD9D5;
+    --accent: #6C8716;
+    --accent-fill: #A9C23A;
+    --accent-ink: #1E2806;
+    --danger: #BF3F27;
+    --st-wet: #85878A;
+    --st-dry: #B3ADA6;
+    --st-bq: #EBA79F;
+    --st-bisqued: #E5553A;
+    --st-gq: #7DC2B8;
+    --st-done: #A9C23A;
+    --shadow: 0 1px 2px rgba(40, 41, 44, 0.07), 0 2px 8px rgba(40, 41, 44, 0.05);
+    --scrim: rgba(30, 31, 34, 0.5);
+    --tabbar-h: 60px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #222325;
+      --surface: #2B2C2F;
+      --surface-2: #343539;
+      --ink: #EDEBE8;
+      --muted: #A7A9AD;
+      --line: #45474B;
+      --accent: #BBD44C;
+      --accent-fill: #A9C23A;
+      --accent-ink: #1E2806;
+      --danger: #F08A73;
+      --st-wet: #A3A5A9;
+      --st-dry: #CFCBC6;
+      --st-bq: #F0B9B3;
+      --st-bisqued: #EE7358;
+      --st-gq: #A8D5CF;
+      --st-done: #BBD44C;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --scrim: rgba(0, 0, 0, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #222325;
+    --surface: #2B2C2F;
+    --surface-2: #343539;
+    --ink: #EDEBE8;
+    --muted: #A7A9AD;
+    --line: #45474B;
+    --accent: #BBD44C;
+    --accent-fill: #A9C23A;
+    --accent-ink: #1E2806;
+    --danger: #F08A73;
+    --st-wet: #A3A5A9;
+    --st-dry: #CFCBC6;
+    --st-bq: #F0B9B3;
+    --st-bisqued: #EE7358;
+    --st-gq: #A8D5CF;
+    --st-done: #BBD44C;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --scrim: rgba(0, 0, 0, 0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  html, body { height: 100%; margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 15px/1.45 "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1, h2, h3 { margin: 0; font-weight: 400; text-wrap: balance; }
+  .serif { font-family: "Young Serif", Georgia, "Times New Roman", serif; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  input, textarea, select {
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.55em 0.7em;
+    width: 100%;
+    min-width: 0;
+  }
+  input[type="color"] { padding: 2px; height: 42px; width: 56px; flex: none; }
+  textarea { resize: vertical; min-height: 5em; line-height: 1.45; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; }
+  #main { padding-bottom: calc(var(--tabbar-h) + 32px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Top bar */
+  .topbar {
+    position: sticky;
+    top: 0;
+    padding-top: env(safe-area-inset-top, 0px);
+    z-index: 20;
+    background: var(--ground);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .wrap { display: flex; align-items: center; gap: 10px; min-height: 58px; padding-block: 8px; }
+  .topbar h1 { font-family: "Young Serif", Georgia, serif; font-size: 1.45rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar .sub { color: var(--muted); font-size: 0.82rem; }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: none; background: none;
+    display: grid; place-items: center; flex: none;
+  }
+  .icon-btn:active { background: var(--line); }
+  .icon-btn svg { width: 22px; height: 22px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2);
+    padding: 0.5em 1em; font-weight: 600; font-size: 0.9rem; white-space: nowrap;
+  }
+  .btn.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--accent-ink); }
+  .btn.danger { color: var(--danger); border-color: var(--danger); background: none; }
+  .btn.block { width: 100%; border-radius: 10px; padding: 0.8em; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .link-btn { background: none; border: none; color: var(--accent); font-weight: 600; padding: 0.3em 0; font-size: 0.9rem; }
+
+  /* Tab bar */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .tabbar .wrap { display: grid; grid-template-columns: repeat(3, 1fr); height: var(--tabbar-h); }
+  .tab {
+    border: none; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    color: var(--muted); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .tab svg { width: 24px; height: 24px; }
+  .tab.on { color: var(--accent); }
+
+  /* Studio dashboard */
+  .pipeline {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 16px 0 6px;
+  }
+  .pipe {
+    border: 1px solid var(--line); background: var(--surface); border-radius: 10px;
+    padding: 8px 8px 9px; text-align: left; display: flex; flex-direction: column; gap: 2px;
+    border-top: 4px solid var(--c);
+  }
+  .pipe .n { font-family: "JetBrains Mono", monospace; font-size: 1.35rem; font-weight: 500; line-height: 1.1; }
+  .pipe .l { font-size: 0.74rem; color: var(--muted); line-height: 1.2; }
+  .pipe.zero .n { color: var(--muted); opacity: 0.6; }
+
+  .group { margin-top: 26px; }
+  .group-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .group-head h2 { font-family: "Young Serif", Georgia, serif; font-size: 1.25rem; }
+  .group-head p { margin: 0; color: var(--muted); font-size: 0.85rem; }
+  .shelf { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 12px; scroll-margin-top: 80px; }
+  .shelf-head {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--c) 9%, var(--surface));
+  }
+  .shelf-head .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+  .shelf-head .t { font-weight: 700; flex: 1; }
+  .shelf-head .place { font-size: 0.8rem; color: var(--muted); }
+  .shelf-head .cnt { font-family: "JetBrains Mono", monospace; font-size: 0.85rem; color: var(--muted); }
+  .shelf-empty { padding: 12px 14px; color: var(--muted); font-size: 0.88rem; }
+
+  .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 8px; border-top: 1px solid var(--line); }
+  .shelf-head + .row, .used-on .row:first-child, .rack-date + .row { border-top: none; }
+  .shelf-note { padding: 10px 14px 0; font-size: 0.84rem; color: var(--muted); margin: 0; }
+  .rack-date {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+    padding: 12px 14px 4px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink);
+  }
+  .rack-date span { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
+  .row-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; border: none; background: none; text-align: left; padding: 2px; border-radius: 8px; }
+  .row-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex: none; background: var(--line); display: block; }
+  .row-thumb.ph { background: color-mix(in srgb, var(--c) 22%, var(--surface-2)); display: grid; place-items: center; color: var(--c); font-family: "Young Serif", serif; font-size: 1.3rem; }
+  .row-text { min-width: 0; display: flex; flex-direction: column; }
+  .row-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-meta { font-size: 0.82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-act {
+    flex: none; border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px;
+    font-size: 0.8rem; font-weight: 600; padding: 0.45em 0.8em; color: var(--ink);
+  }
+  .row-act:active { background: var(--line); }
+
+  .empty { text-align: center; padding: 40px 16px; color: var(--muted); }
+  .empty h2 { font-family: "Young Serif", Georgia, serif; font-size: 1.3rem; color: var(--ink); margin-bottom: 6px; }
+  .empty p { margin: 0 auto 16px; max-width: 34ch; }
+
+  /* Pieces list */
+  .toolbar { display: flex; flex-direction: column; gap: 10px; margin: 14px 0 12px; }
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+    border-radius: 999px; padding: 0.35em 0.85em; font-size: 0.84rem; font-weight: 600; white-space: nowrap;
+  }
+  .chip.on { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .card { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; overflow: hidden; text-align: left; padding: 0; display: flex; flex-direction: column; }
+  .card-img { aspect-ratio: 1; width: 100%; max-width: 100%; object-fit: cover; display: block; background: var(--line); }
+  .card-img.ph { display: grid; place-items: center; background: color-mix(in srgb, var(--c) 18%, var(--surface-2)); color: var(--c); font-family: "Young Serif", serif; font-size: 2.2rem; }
+  .card-body { padding: 9px 10px 11px; display: flex; flex-direction: column; gap: 5px; }
+  .card-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pill {
+    align-self: flex-start; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+    padding: 0.2em 0.6em; border-radius: 999px;
+    color: var(--ink); background: color-mix(in srgb, var(--c) 30%, transparent);
+  }
+
+  /* Glaze list */
+  .glist { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 14px; }
+  .grow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: none; border-top: 1px solid var(--line); background: none; width: 100%; text-align: left; }
+  .grow:first-child { border-top: none; }
+  .swatch { width: 38px; height: 38px; border-radius: 50%; flex: none; border: 1px solid var(--line); background: var(--sw, var(--line)); box-shadow: inset 0 -6px 10px rgba(0,0,0,0.12), inset 0 4px 6px rgba(255,255,255,0.25); }
+  .swatch.img { background-size: cover; background-position: center; }
+  .grow .gname { font-weight: 600; }
+  .grow .gmeta { font-size: 0.82rem; color: var(--muted); }
+  .grow .gcount { margin-left: auto; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+
+  /* Detail pages */
+  .hero { margin: 14px 0 0; }
+  .hero-frame { position: relative; width: 100%; max-width: 100%; aspect-ratio: 4 / 3; max-height: 62vh; border-radius: 12px; overflow: hidden; background: var(--line); }
+  .hero-frame img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .hero-frame.editing { outline: 3px solid var(--accent-fill); outline-offset: -3px; touch-action: none; }
+  .hero-frame.editing img { cursor: grab; touch-action: none; }
+  .hero-frame.editing img:active { cursor: grabbing; }
+  .hero-hint { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #fff; font-size: 0.8rem; font-weight: 600; padding: 5px 12px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
+  .hero-controls { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .save-btn { min-width: 84px; }
+  .save-btn:disabled { opacity: 1; background: none; border-color: transparent; color: var(--muted); }
+  .hero-empty {
+    height: 140px; border-radius: 12px; border: 1.5px dashed var(--line); display: grid; place-items: center;
+    color: var(--muted); background: none; width: 100%;
+  }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-top: 14px; }
+  .panel-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .panel-head h3 { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); flex: 1; }
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+  .fields .full { grid-column: 1 / -1; }
+  @media (max-width: 420px) { .fields.stack-sm { grid-template-columns: 1fr; } }
+  .field label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  .name-input { font-family: "Young Serif", Georgia, serif; font-size: 1.4rem; background: none; border: none; border-bottom: 1px solid var(--line); border-radius: 0; padding: 4px 0; }
+  .name-input:focus { outline: none; border-bottom: 2px solid var(--accent); }
+  .hint { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
+
+  .stage-now { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .stage-now .big { font-family: "Young Serif", Georgia, serif; font-size: 1.2rem; color: var(--ink); border-left: 5px solid var(--c); padding-left: 10px; }
+  .stage-now .since { color: var(--muted); font-size: 0.85rem; }
+  .stage-now .btn { margin-left: auto; }
+  .ladder { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 14px; }
+  .rung {
+    border: none; background: none; padding: 0; display: flex; flex-direction: column; align-items: stretch; gap: 5px; text-align: center;
+    font-size: 0.66rem; line-height: 1.15; color: var(--muted);
+  }
+  .rung .bar { height: 8px; border-radius: 4px; background: var(--line); }
+  .rung.past .bar { background: color-mix(in srgb, var(--c) 55%, var(--line)); }
+  .rung.cur .bar { background: var(--c); height: 12px; margin-top: -2px; }
+  .rung.cur { color: var(--ink); font-weight: 700; }
+  .history { margin: 12px 0 0; padding: 0; list-style: none; font-size: 0.82rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .history b { color: var(--ink); font-weight: 600; }
+
+  .apps { display: flex; flex-direction: column; gap: 8px; }
+  .app { display: flex; align-items: center; gap: 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .app .swatch { width: 30px; height: 30px; }
+  .app-text { flex: 1; min-width: 0; border: none; background: none; text-align: left; padding: 0; }
+  .app-name { font-weight: 600; }
+  .app-meta { font-size: 0.82rem; color: var(--muted); }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 0.25em 0.35em 0.25em 0.75em; font-size: 0.86rem; }
+  .tag button { border: none; background: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); padding: 0; }
+  .inline-add { display: flex; gap: 8px; }
+  .inline-add input { flex: 1; }
+
+  .photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .ph-tile { position: relative; border: none; padding: 0; background: none; border-radius: 8px; overflow: hidden; aspect-ratio: 1; max-width: 100%; }
+  .ph-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ph-tile .ph-lbl { position: absolute; left: 4px; bottom: 4px; font-size: 0.66rem; font-weight: 700; background: rgba(0,0,0,0.55); color: #fff; padding: 1px 6px; border-radius: 999px; }
+  .ph-tile .star { position: absolute; right: 4px; top: 4px; font-size: 0.66rem; font-weight: 700; background: rgba(0,0,0,0.55); color: #fff; padding: 1px 6px; border-radius: 999px; }
+  .ph-add { aspect-ratio: 1; border: 1.5px dashed var(--line); border-radius: 8px; background: none; color: var(--muted); display: grid; place-items: center; font-size: 0.8rem; font-weight: 600; text-align: center; padding: 6px; }
+
+  .notes { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .note { display: flex; gap: 8px; align-items: flex-start; border-left: 3px solid var(--line); padding-left: 10px; }
+  .note-body { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .note-date { font-size: 0.75rem; color: var(--muted); font-weight: 600; display: block; }
+  .x-btn { border: none; background: none; color: var(--muted); width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; }
+  .x-btn:active { background: var(--line); }
+  .x-btn svg { width: 16px; height: 16px; }
+
+  .recipe { width: 100%; border-collapse: collapse; }
+  .recipe td { padding: 3px 0; vertical-align: middle; }
+  .recipe td.amt { width: 92px; padding-left: 8px; }
+  .recipe td.pct { width: 56px; text-align: right; color: var(--muted); font-size: 0.8rem; padding-left: 6px; }
+  .recipe td.rm { width: 34px; }
+  .recipe input { padding: 0.45em 0.55em; }
+  .recipe-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 0.85rem; color: var(--muted); }
+  .used-on { display: flex; flex-direction: column; }
+
+  /* Sheets */
+  .backdrop { position: fixed; inset: 0; z-index: 100; background: var(--scrim); display: flex; align-items: flex-end; justify-content: center; }
+  @media (min-width: 700px) { .backdrop { align-items: center; } .sheet { border-radius: 16px !important; } }
+  .sheet {
+    background: var(--surface); width: 100%; max-width: 560px;
+    border-radius: 16px 16px 0 0; max-height: 90vh; overflow-y: auto;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+  .sheet h2 { font-family: "Young Serif", Georgia, serif; font-size: 1.3rem; margin-bottom: 14px; }
+  .sheet .actions { display: flex; gap: 10px; margin-top: 18px; }
+  .sheet .actions .btn { flex: 1; border-radius: 10px; padding: 0.75em; }
+  .sheet p { color: var(--muted); margin: 0; }
+  .lightbox { position: fixed; inset: 0; z-index: 120; background: rgba(8, 10, 10, 0.94); display: flex; flex-direction: column; padding: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px)); color: #EEF1EE; }
+  .lightbox .lb-top { display: flex; justify-content: flex-end; }
+  .lightbox .lb-img { flex: 1; min-height: 0; display: grid; place-items: center; padding: 8px 0; }
+  .lightbox .lb-img img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+  .lightbox .lb-bar { display: flex; flex-direction: column; gap: 10px; max-width: 560px; width: 100%; margin: 0 auto; }
+  .lightbox .lb-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .lightbox .lb-row > * { flex: 1; }
+  .lightbox input, .lightbox select { background: rgba(255,255,255,0.1); color: #EEF1EE; border-color: rgba(255,255,255,0.2); }
+  .lightbox select option { color: #111; }
+  .lightbox .btn { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); color: #EEF1EE; }
+  .lightbox .btn.danger { color: #F2A197; border-color: rgba(242,161,151,0.5); background: none; }
+  .lightbox .icon-btn { color: #EEF1EE; }
+
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%); z-index: 150;
+    bottom: calc(var(--tabbar-h) + 14px + env(safe-area-inset-bottom, 0px));
+    background: var(--ink); color: var(--ground); border-radius: 12px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 14px; font-size: 0.9rem; font-weight: 500;
+    max-width: calc(100% - 32px); box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  }
+  .toast button { border: none; background: none; color: var(--ground); font-weight: 700; text-decoration: underline; padding: 0; }
+  .banner { margin-top: 16px; padding: 12px 14px; border-radius: 10px; background: color-mix(in srgb, var(--st-bisqued) 15%, var(--surface)); border: 1px solid var(--line); font-size: 0.9rem; }
+  .login { min-height: 100%; display: grid; place-items: center; padding-block: calc(40px + env(safe-area-inset-top, 0px)) 40px; }
+  .login-card { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; text-align: center; }
+  .login-card img { width: 96px; height: 96px; border-radius: 22px; margin: 0 auto; }
+  .login-card h1 { font-family: "Young Serif", Georgia, serif; font-size: 1.8rem; }
+  .login-card p { margin: 0; color: var(--muted); }
+  .login-card form { display: flex; flex-direction: column; gap: 12px; text-align: left; margin-top: 6px; }
+  .login-err { color: var(--danger) !important; font-size: 0.88rem; }
+  .signout { text-align: center; color: var(--muted); font-size: 0.82rem; margin: 36px 0 0; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="main"></div>
+  <nav class="tabbar" aria-label="Sections">
+    <div class="wrap" id="tabs"></div>
+  </nav>
+</div>
+<div id="sheet-root"></div>
+<div id="toast-root"></div>
+<input type="file" id="photo-input" accept="image/*" multiple hidden>
+
+<datalist id="dl-forms"><option>Mug</option><option>Bowl</option><option>Cup</option><option>Tumbler</option><option>Plate</option><option>Vase</option><option>Planter</option><option>Jar</option><option>Pitcher</option><option>Teapot</option><option>Platter</option><option>Sculpture</option></datalist>
+<datalist id="dl-methods"><option>Wheel-thrown</option><option>Hand-built: slab</option><option>Hand-built: coil</option><option>Hand-built: pinch</option><option>Altered thrown</option><option>Slip cast</option></datalist>
+<datalist id="dl-clay"></datalist>
+<datalist id="dl-tools"></datalist>
+<datalist id="dl-materials"><option>Custer Feldspar</option><option>Minspar 200</option><option>Nepheline Syenite</option><option>Silica (325 mesh)</option><option>EPK Kaolin</option><option>Grolleg Kaolin</option><option>OM-4 Ball Clay</option><option>Whiting</option><option>Wollastonite</option><option>Dolomite</option><option>Talc</option><option>Gerstley Borate</option><option>Ferro Frit 3134</option><option>Ferro Frit 3124</option><option>Ferro Frit 3195</option><option>Zinc Oxide</option><option>Strontium Carbonate</option><option>Lithium Carbonate</option><option>Barium Carbonate</option><option>Bone Ash</option><option>Bentonite</option><option>Red Iron Oxide</option><option>Cobalt Carbonate</option><option>Cobalt Oxide</option><option>Copper Carbonate</option><option>Rutile</option><option>Titanium Dioxide</option><option>Tin Oxide</option><option>Zircopax</option><option>Manganese Dioxide</option><option>Chrome Oxide</option></datalist>
+
+<script src="supabase.js"></script>
+<script>
+  // Your Supabase project. The publishable (anon) key is safe to include here.
+  var CONFIG = {
+    url: "https://hixcsamomkbdogzjtltv.supabase.co",
+    key: "sb_publishable_cE5gG6xu9F3dqesg3iyWNA_DCq3nn0k"
+  };
+</script>
+<script>
+(function () {
+  "use strict";
+
+  var STAGES = [
+    { key: "wet",         label: "Making",                  short: "Making",          place: "Your shelf",      next: "Set to dry",        color: "--st-wet" },
+    { key: "drying",      label: "Drying",                  short: "Drying",          place: "Drying shelf",    next: "On greenware shelf", color: "--st-dry" },
+    { key: "bisque_wait", label: "On the greenware shelf",  short: "Greenware shelf", place: "Greenware shelf", next: "Found it bisqued",  color: "--st-bq", shelved: "Put on greenware shelf" },
+    { key: "bisqued",     label: "Bisqued, needs glaze",    short: "To glaze",        place: "Your shelf",      next: "On glaze shelf",    color: "--st-bisqued" },
+    { key: "glaze_wait",  label: "On the glaze shelf",      short: "Glaze shelf",     place: "Glaze shelf",     next: "Found it fired",    color: "--st-gq", shelved: "Put on glaze shelf" },
+    { key: "done",        label: "Finished",                short: "Finished",        place: "Home",            next: null,                color: "--st-done" }
+  ];
+  var CONES = ["022", "018", "010", "08", "06", "05", "04", "03", "1", "4", "5", "6", "7", "8", "9", "10", "11"];
+  var ATMOS = ["Oxidation", "Reduction", "Soda", "Salt", "Wood", "Raku"];
+  var KINDS = [["recipe", "My recipe"], ["studio", "Studio glaze"], ["commercial", "Commercial"]];
+  var APPLY = ["Dipped", "Brushed", "Poured", "Sprayed", "Sponged", "Trailed", "Wax resist", "Underglaze"];
+  var AREAS = ["Whole piece", "Inside", "Outside", "Rim", "Lower half", "Layered over", "Foot"];
+
+  var S = {
+    db: null, assets: null, status: "loading",
+    pieces: [], glazes: [],
+    tab: "studio", view: "studio", id: null, stack: [],
+    filter: "active", search: "",
+    sheet: null, photoTarget: null, pending: false, toastTimer: null,
+    draft: {}, repos: null, drag: null
+  };
+  try { var t = localStorage.getItem("kiln-tab"); if (t === "studio" || t === "pieces" || t === "glazes") { S.tab = S.view = t; } } catch (e) {}
+
+  /* ---------- helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function todayISO() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function nowISO() { return new Date().toISOString(); }
+  function rid() { return Math.random().toString(36).slice(2, 10); }
+  function toDate(iso) {
+    if (!iso) return null;
+    var d = iso.length === 10 ? new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) : new Date(iso);
+    return isNaN(d) ? null : d;
+  }
+  function fmtDate(iso) {
+    var d = toDate(iso); if (!d) return "";
+    var o = { month: "short", day: "numeric" };
+    if (d.getFullYear() !== new Date().getFullYear()) o.year = "numeric";
+    return d.toLocaleDateString(undefined, o);
+  }
+  function daysSince(iso) {
+    var d = toDate(iso); if (!d) return null;
+    var a = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var n = new Date(); var b = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    return Math.round((b - a) / 86400000);
+  }
+  function ago(iso) {
+    var d = daysSince(iso); if (d == null) return "";
+    if (d <= 0) return "since today"; if (d === 1) return "1 day"; return d + " days";
+  }
+  function stageIdx(k) { if (k === "fired") k = "done"; var i = STAGES.findIndex(function (s) { return s.key === k; }); return i < 0 ? 0 : i; }
+  function stage(k) { return STAGES[stageIdx(k)]; }
+  function piece(id) { return S.pieces.find(function (p) { return p.id === id; }); }
+  function glaze(id) { return S.glazes.find(function (g) { return g.id === id; }); }
+  function blob(id) { return CONFIG.url + "/storage/v1/object/public/photos/" + id.split("/").map(encodeURIComponent).join("/"); }
+  function coverOf(p) {
+    var ph = p.photos || []; if (!ph.length) return null;
+    if (p.coverId && ph.some(function (x) { return x.id === p.coverId; })) return p.coverId;
+    return ph[ph.length - 1].id;
+  }
+  function posOf(pos) { return pos && typeof pos.x === "number" ? pos : { x: 50, y: 50 }; }
+  function posCss(pos) { var q = posOf(pos); return q.x.toFixed(1) + "% " + q.y.toFixed(1) + "%"; }
+  function coverPos(p) { var c = coverOf(p); var ph = c && (p.photos || []).find(function (x) { return x.id === c; }); return posCss(ph && ph.pos); }
+  function localISO(iso) { var d = toDate(iso); return d ? d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) : ""; }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function dv(obj, k) { return has(S.draft, k) ? S.draft[k] : obj[k]; }
+  function isDirty() { return (S.view === "piece" || S.view === "glaze") && Object.keys(S.draft).some(function (k) { var v = S.draft[k]; return !(k.charAt(0) === "_" && !String(v || "").trim()); }); }
+  function initial(p) { return esc(((p.form || p.name || "?").trim()[0] || "?").toUpperCase()); }
+  function appName(a) { var g = a.glazeId && glaze(a.glazeId); return g ? g.name : (a.glazeName || "Unnamed glaze"); }
+  function glazeSummary(p) { return (p.glazeApps || []).map(appName).join(" + "); }
+  function sortPieces(list) { return list.slice().sort(function (a, b) { return String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")); }); }
+  function optionList(arr, cur, blank) {
+    var h = blank != null ? '<option value="">' + esc(blank) + "</option>" : "";
+    return h + arr.map(function (v) {
+      var val = Array.isArray(v) ? v[0] : v, lbl = Array.isArray(v) ? v[1] : v;
+      return '<option value="' + esc(val) + '"' + (String(cur) === String(val) ? " selected" : "") + ">" + esc(lbl) + "</option>";
+    }).join("");
+  }
+  var ICON = {
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    studio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M3 13h18M3 6h18M4 6v14M20 6v14"/><path d="M8 13v-3.2c0-.6.5-1.3 1.2-1.3h1.6c.7 0 1.2.7 1.2 1.3V13M14 20v-3.5c0-.8.7-1.5 1.5-1.5h.5c.8 0 1.5.7 1.5 1.5V20"/></svg>',
+    pot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8M9 3c0 2-3 3.5-3 8 0 5 2.5 10 6 10s6-5 6-10c0-4.5-3-6-3-8"/><path d="M6.5 13h11"/></svg>',
+    drop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/><path d="M9 15a3 3 0 003 3"/></svg>'
+  };
+
+  /* ---------- rendering ---------- */
+  function isEditing() {
+    var a = document.activeElement;
+    return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.id !== "photo-input");
+  }
+  function softRender() {
+    if (S.sheet || S.repos || isEditing()) { S.pending = true; return; }
+    render();
+  }
+  function render() {
+    S.pending = false;
+    renderTabs();
+    var m = $("main");
+    if (S.status === "loading") { m.innerHTML = bar("Kiln Log") + '<div class="wrap"><div class="empty"><p>Opening your log…</p></div></div>'; return; }
+    if (S.status === "unavailable") {
+      m.innerHTML = bar("Kiln Log") + '<div class="wrap"><div class="banner">Couldn’t reach your log. Check your internet connection, then try again.</div><div style="margin-top:14px"><button class="btn primary" data-a="retry">Try again</button></div></div>';
+      return;
+    }
+    if (S.status === "config") {
+      m.innerHTML = bar("Kiln Log") + '<div class="wrap"><div class="banner">Setup isn’t finished: the Supabase project URL and key are missing from index.html.</div></div>';
+      return;
+    }
+    if (S.status === "signed-out") { m.innerHTML = viewLogin(); return; }
+    if (S.view === "studio") m.innerHTML = viewStudio() + '<div class="wrap"><p class="signout">Signed in as ' + esc(USER && USER.email) + ' · <button class="link-btn" data-a="sign-out">Sign out</button></p></div>';
+    else if (S.view === "pieces") { m.innerHTML = viewPieces(); }
+    else if (S.view === "glazes") m.innerHTML = viewGlazes();
+    else if (S.view === "piece") m.innerHTML = viewPiece();
+    else if (S.view === "glaze") m.innerHTML = viewGlaze();
+    fillDatalists();
+    updateSaveBtn();
+  }
+  function viewLogin() {
+    return '<div class="wrap login"><div class="login-card"><img src="icons/icon-192.png" alt=""><h1>Kiln Log</h1><p>Sign in to see your pieces.</p>' +
+      '<form id="login-form" novalidate><div class="field"><label for="li-email">Email</label><input id="li-email" type="email" autocomplete="username" inputmode="email" autocapitalize="off" required></div>' +
+      '<div class="field"><label for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password" required></div>' +
+      '<p class="login-err" id="li-err" hidden></p><button class="btn primary block" type="submit" id="li-btn">Sign in</button></form></div></div>';
+  }
+  function renderTabs() {
+    document.querySelector(".tabbar").hidden = S.status !== "ready";
+    var tabs = [["studio", "Studio", ICON.studio], ["pieces", "Pieces", ICON.pot], ["glazes", "Glazes", ICON.drop]];
+    $("tabs").innerHTML = tabs.map(function (t) {
+      return '<button class="tab' + (S.tab === t[0] ? " on" : "") + '" data-a="tab" data-k="' + t[0] + '"' + (S.tab === t[0] ? ' aria-current="page"' : "") + ">" + t[2] + "<span>" + t[1] + "</span></button>";
+    }).join("");
+  }
+  function bar(title, opts) {
+    opts = opts || {};
+    return '<header class="topbar"><div class="wrap">' +
+      (opts.back ? '<button class="icon-btn" data-a="back" aria-label="Back">' + ICON.back + "</button>" : "") +
+      '<div style="flex:1;min-width:0"><h1>' + esc(title) + "</h1>" + (opts.sub ? '<div class="sub">' + esc(opts.sub) + "</div>" : "") + "</div>" +
+      (opts.save ? saveBtnHtml() : "") + (opts.right || "") + "</div></header>";
+  }
+  function saveBtnHtml() {
+    var d = isDirty();
+    return '<button id="save-btn" class="btn save-btn' + (d ? " primary" : "") + '" data-a="save"' + (d ? "" : " disabled") + ">" + (d ? "Save" : "Saved ✓") + "</button>";
+  }
+  function updateSaveBtn() {
+    var b = $("save-btn"), d = isDirty();
+    if (b) { b.disabled = !d; b.classList.toggle("primary", d); b.textContent = d ? "Save" : "Saved ✓"; }
+    var bb = $("save-bottom");
+    if (bb) { bb.disabled = !d; bb.textContent = d ? "Save changes" : "All changes saved"; }
+  }
+  function fillDatalists() {
+    var clay = {}, tools = {};
+    S.pieces.forEach(function (p) {
+      if (p.clayBody) clay[p.clayBody] = 1;
+      (p.tools || []).forEach(function (t) { tools[t] = 1; });
+    });
+    ["Loop tool", "Ribbon tool", "Needle tool", "Wire loop", "Serrated rib", "Metal rib", "Sgraffito tool", "Chattering tool", "Fluting tool", "Hole cutter", "Sponge on a stick", "Stamps"].forEach(function (t) { tools[t] = 1; });
+    $("dl-clay").innerHTML = Object.keys(clay).map(function (c) { return "<option>" + esc(c) + "</option>"; }).join("");
+    $("dl-tools").innerHTML = Object.keys(tools).map(function (c) { return "<option>" + esc(c) + "</option>"; }).join("");
+  }
+
+  /* Studio dashboard */
+  function viewStudio() {
+    var active = S.pieces.filter(function (p) { return p.stage !== "done"; });
+    var d = new Date();
+    var h = bar("Studio", { sub: d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) + " · " + active.length + " in the works",
+      right: '<button class="btn primary" data-a="new-piece">' + ICON.plus.replace("<svg", '<svg width="16" height="16"') + " New piece</button>" });
+    h += '<div class="wrap">';
+    if (!S.pieces.length) {
+      return h + '<div class="empty"><h2>Nothing on the shelves yet</h2><p>Add a piece when you make it. When you put it on the greenware or glaze shelf, this page lists what to look for on the racks.</p><button class="btn primary" data-a="new-piece">Add your first piece</button></div></div>';
+    }
+    h += '<div class="pipeline">' + STAGES.filter(function (s) { return s.key !== "done"; }).map(function (s) {
+      var n = active.filter(function (p) { return p.stage === s.key; }).length;
+      return '<button class="pipe' + (n ? "" : " zero") + '" style="--c:var(' + s.color + ')" data-a="jump" data-k="' + s.key + '"><span class="n">' + n + '</span><span class="l">' + esc(s.short) + "</span></button>";
+    }).join("") + "</div>";
+
+    h += '<section class="group"><div class="group-head"><h2>Look for these</h2><p>Grouped by the day you shelved them. Check racks unloaded after that date.</p></div>';
+    h += rackShelf(active, "bisque_wait", "On the bisque racks", "Pieces you put on the greenware shelf. Look on the bisque racks.");
+    h += rackShelf(active, "glaze_wait", "On the glaze racks", "Pieces you put on the glaze shelf. Look on the glaze-fired racks.");
+    h += "</section>";
+
+    h += '<section class="group"><div class="group-head"><h2>Needs glaze</h2><p>Bisqued and waiting for you.</p></div>';
+    h += plainShelf(active, "bisqued") + "</section>";
+    h += '<section class="group"><div class="group-head"><h2>Still in progress</h2><p>Being made, or drying.</p></div>';
+    h += plainShelf(active, "wet") + plainShelf(active, "drying") + "</section>";
+    return h + "</div>";
+  }
+  function inStage(list, k) {
+    return list.filter(function (p) { return p.stage === k; }).sort(function (a, b) { return String(a.stageAt || "").localeCompare(String(b.stageAt || "")); });
+  }
+  function shelfHead(s, title, n) {
+    return '<div class="shelf-head"><span class="dot"></span><span class="t">' + esc(title) + '</span><span class="cnt">' + n + "</span></div>";
+  }
+  function rackShelf(active, k, title, note) {
+    var s = stage(k), list = inStage(active, k);
+    var h = '<div class="shelf" id="sec-' + k + '" style="--c:var(' + s.color + ')">' + shelfHead(s, title, list.length);
+    if (!list.length) return h + '<div class="shelf-empty">Nothing waiting here.</div></div>';
+    h += '<p class="shelf-note">' + esc(note) + "</p>";
+    var days = {};
+    list.forEach(function (p) { var key = localISO(p.stageAt) || "unknown"; (days[key] = days[key] || []).push(p); });
+    Object.keys(days).sort().forEach(function (day) {
+      var n = daysSince(day);
+      var when = n == null ? "" : n <= 0 ? "today" : n === 1 ? "yesterday" : n + " days ago";
+      h += '<div class="rack-date">Shelved ' + esc(day === "unknown" ? "(no date)" : fmtDate(day)) + "<span>" + esc(when) + " · check racks unloaded after this</span></div>";
+      h += days[day].map(function (p) { return rowHtml(p, true); }).join("");
+    });
+    return h + "</div>";
+  }
+  function plainShelf(active, k) {
+    var s = stage(k), list = inStage(active, k);
+    var h = '<div class="shelf" id="sec-' + k + '" style="--c:var(' + s.color + ')">' + shelfHead(s, s.label, list.length);
+    h += list.length ? list.map(function (p) { return rowHtml(p); }).join("") : '<div class="shelf-empty">Nothing here.</div>';
+    return h + "</div>";
+  }
+  function rowHtml(p, onRack) {
+    var s = stage(p.stage), c = coverOf(p);
+    var bits = [];
+    if (p.mark) bits.push(p.mark);
+    if (onRack) { var gz = glazeSummary(p); if (p.stage === "glaze_wait" && gz) bits.push(gz); if (p.form) bits.push(p.form); if (p.clayBody) bits.push(p.clayBody); }
+    else { bits.push(p.location || s.place); bits.push(ago(p.stageAt)); if (p.form) bits.push(p.form); }
+    return '<div class="row"><button class="row-main" data-a="open-piece" data-id="' + p.id + '">' +
+      (c ? '<img class="row-thumb" src="' + blob(c) + '" style="object-position:' + coverPos(p) + '" alt="" loading="lazy">' : '<span class="row-thumb ph" style="--c:var(' + s.color + ')">' + initial(p) + "</span>") +
+      '<span class="row-text"><span class="row-name">' + esc(p.name || "Untitled") + '</span><span class="row-meta">' + esc(bits.filter(Boolean).join(" · ")) + "</span></span></button>" +
+      (s.next ? '<button class="row-act" data-a="advance" data-id="' + p.id + '">' + esc(s.next) + "</button>" : "") + "</div>";
+  }
+
+  /* Pieces */
+  function viewPieces() {
+    var h = bar("Pieces", { sub: S.pieces.length + " logged", right: '<button class="btn primary" data-a="new-piece">' + ICON.plus.replace("<svg", '<svg width="16" height="16"') + " New</button>" });
+    h += '<div class="wrap"><div class="toolbar"><input id="search" type="search" placeholder="Search names, glazes, clay, tools, notes" value="' + esc(S.search) + '" aria-label="Search pieces">';
+    var chips = [["active", "Active"], ["all", "All"]].concat(STAGES.map(function (s) { return [s.key, s.short]; }));
+    h += '<div class="chips">' + chips.map(function (c) {
+      return '<button class="chip' + (S.filter === c[0] ? " on" : "") + '" data-a="filter" data-k="' + c[0] + '">' + esc(c[1]) + "</button>";
+    }).join("") + "</div></div>";
+    h += '<div id="piece-grid">' + pieceGrid() + "</div></div>";
+    return h;
+  }
+  function pieceGrid() {
+    var q = S.search.trim().toLowerCase();
+    var list = S.pieces.filter(function (p) {
+      if (S.filter === "active" && p.stage === "done") return false;
+      if (S.filter !== "active" && S.filter !== "all" && p.stage !== S.filter) return false;
+      if (!q) return true;
+      var hay = [p.name, p.form, p.method, p.clayBody, p.location, p.technique, glazeSummary(p), (p.tools || []).join(" "), (p.notes || []).map(function (n) { return n.text; }).join(" ")].join(" ").toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    if (!S.pieces.length) return '<div class="empty"><h2>No pieces yet</h2><p>Every mug, bowl and test tile you log shows up here.</p><button class="btn primary" data-a="new-piece">Add a piece</button></div>';
+    if (!list.length) return '<div class="empty"><p>No pieces match.</p></div>';
+    return '<div class="grid">' + sortPieces(list).map(function (p) {
+      var s = stage(p.stage), c = coverOf(p);
+      return '<button class="card" data-a="open-piece" data-id="' + p.id + '" style="--c:var(' + s.color + ')">' +
+        (c ? '<img class="card-img" src="' + blob(c) + '" style="object-position:' + coverPos(p) + '" alt="" loading="lazy">' : '<span class="card-img ph">' + initial(p) + "</span>") +
+        '<span class="card-body"><span class="card-name">' + esc(p.name || "Untitled") + '</span><span class="pill">' + esc(s.short) + "</span></span></button>";
+    }).join("") + "</div>";
+  }
+
+  /* Glazes */
+  function viewGlazes() {
+    var h = bar("Glazes", { sub: S.glazes.length + " in your library", right: '<button class="btn primary" data-a="new-glaze">' + ICON.plus.replace("<svg", '<svg width="16" height="16"') + " New glaze</button>" });
+    h += '<div class="wrap">';
+    if (!S.glazes.length) {
+      return h + '<div class="empty"><h2>Your glaze library</h2><p>Save each glaze once, with its recipe, cone and a test tile photo. Then pick it on any piece.</p><button class="btn primary" data-a="new-glaze">Add a glaze</button></div></div>';
+    }
+    var list = S.glazes.slice().sort(function (a, b) { return String(a.name || "").localeCompare(String(b.name || "")); });
+    h += '<div class="glist">' + list.map(function (g) {
+      var n = S.pieces.filter(function (p) { return (p.glazeApps || []).some(function (a) { return a.glazeId === g.id; }); }).length;
+      var kind = (KINDS.find(function (k) { return k[0] === g.kind; }) || [0, ""])[1];
+      var meta = [kind, g.cone ? "Cone " + g.cone : "", g.atmosphere].filter(Boolean).join(" · ");
+      return '<button class="grow" data-a="open-glaze" data-id="' + g.id + '">' + swatch(g) +
+        '<span><span class="gname">' + esc(g.name || "Untitled glaze") + '</span><br><span class="gmeta">' + esc(meta) + "</span></span>" +
+        '<span class="gcount">' + (n ? n + (n === 1 ? " piece" : " pieces") : "") + "</span></button>";
+    }).join("") + "</div></div>";
+    return h;
+  }
+  function swatch(g) {
+    if (g && g.photoId) return '<span class="swatch img" style="background-image:url(' + blob(g.photoId) + ');background-position:' + posCss(g.photoPos) + '"></span>';
+    return '<span class="swatch" style="--sw:' + esc((g && g.color) || "#A8D5CF") + '"></span>';
+  }
+
+  /* Hero photo with drag-to-reposition */
+  function heroHtml(photoId, pos, extraBtns) {
+    var editing = S.repos && S.repos.photoId === photoId;
+    var q = editing ? S.repos : posOf(pos);
+    var h = '<div class="hero"><div class="hero-frame' + (editing ? " editing" : "") + '" id="hero-frame">' +
+      '<img id="hero-img" src="' + blob(photoId) + '" alt="" draggable="false" style="object-position:' + posCss(q) + '"' + (editing ? "" : ' data-a="hero-open"') + ">" +
+      (editing ? '<span class="hero-hint">Drag to choose what shows</span>' : "") + "</div>";
+    h += '<div class="hero-controls">' + (editing
+      ? '<button class="btn" data-a="repos-cancel">Cancel</button><button class="btn" data-a="repos-center">Center</button><button class="btn primary" data-a="repos-save">Save position</button>'
+      : '<button class="btn" data-a="repos-start" data-id="' + photoId + '">Reposition</button>' + (extraBtns || "")) + "</div></div>";
+    return h;
+  }
+
+  /* Piece detail */
+  function viewPiece() {
+    var p = piece(S.id);
+    if (!p) return bar("Piece", { back: true }) + '<div class="wrap"><div class="empty"><p>This piece was deleted.</p></div></div>';
+    var s = stage(p.stage), si = stageIdx(p.stage);
+    var photos = p.photos || [];
+    var h = bar(p.name || "Untitled", { back: true, save: true, sub: [p.form, p.clayBody].filter(Boolean).join(" · ") });
+    h += '<div class="wrap">';
+
+    var cid = coverOf(p);
+    if (cid) {
+      var cph = photos.find(function (x) { return x.id === cid; });
+      h += heroHtml(cid, cph && cph.pos, S.assets ? '<button class="btn" data-a="add-photo">+ Add photos</button>' : "");
+    } else if (S.assets) {
+      h += '<div class="hero"><button class="hero-empty" data-a="add-photo">Add a photo of this piece</button></div>';
+    }
+
+    // Stage
+    var shelvedLabel = s.shelved || "In this stage since";
+    h += '<section class="panel" style="--c:var(' + s.color + ')"><div class="panel-head"><h3>Stage</h3></div>' +
+      '<div class="stage-now"><div><div class="big">' + esc(s.label) + '</div><div class="since">' + esc(s.shelved ? "Shelved " + fmtDate(p.stageAt) + " · " + ago(p.stageAt) : ago(p.stageAt)) + "</div></div>" +
+      (s.next ? '<button class="btn primary" data-a="advance" data-id="' + p.id + '">' + esc(s.next) + " →</button>" : "") + "</div>";
+    h += '<div class="ladder" role="group" aria-label="Set stage">' + STAGES.map(function (st, i) {
+      var cls = "rung" + (i < si ? " past" : "") + (i === si ? " cur" : "");
+      return '<button class="' + cls + '" style="--c:var(' + s.color + ')" data-a="set-stage" data-k="' + st.key + '" aria-pressed="' + (i === si) + '"><span class="bar"></span>' + esc(st.short) + "</button>";
+    }).join("") + "</div>";
+    var hist = (p.history || []).slice(-6);
+    if (hist.length) {
+      h += '<ul class="history">' + hist.map(function (e) { return "<li><b>" + esc(stage(e.stage).short) + "</b> " + esc(fmtDate(e.at)) + "</li>"; }).join("") + "</ul>";
+    }
+    var sd = has(S.draft, "stageAt") ? S.draft.stageAt : localISO(p.stageAt);
+    h += '<div class="fields" style="margin-top:14px">' +
+      '<div class="field"><label for="f-stageat">' + esc(shelvedLabel) + '</label><input id="f-stageat" type="date" data-f="stageAt" value="' + esc(sd) + '"></div>' +
+      '<div class="field"><label for="f-location">Shelf spot</label><input id="f-location" data-f="location" value="' + esc(dv(p, "location")) + '" placeholder="e.g. top shelf, left"></div></div>';
+    h += '<p class="hint">Tap a bar to jump to any stage. Fix the shelved date here if you log a piece late.</p></section>';
+
+    // Details
+    h += '<section class="panel"><div class="panel-head"><h3>Details</h3></div><div class="fields">' +
+      '<div class="field full"><label for="f-name">Name</label><input id="f-name" class="name-input" data-f="name" value="' + esc(dv(p, "name")) + '" placeholder="Name this piece"></div>' +
+      '<div class="field"><label for="f-form">Form</label><input id="f-form" data-f="form" list="dl-forms" value="' + esc(dv(p, "form")) + '" placeholder="Mug"></div>' +
+      '<div class="field"><label for="f-method">Method</label><input id="f-method" data-f="method" list="dl-methods" value="' + esc(dv(p, "method")) + '" placeholder="Wheel-thrown"></div>' +
+      '<div class="field"><label for="f-clay">Clay body</label><input id="f-clay" data-f="clayBody" list="dl-clay" value="' + esc(dv(p, "clayBody")) + '" placeholder="e.g. B-Mix 5"></div>' +
+      '<div class="field"><label for="f-made">Started</label><input id="f-made" type="date" data-f="startedOn" value="' + esc(dv(p, "startedOn")) + '"></div>' +
+      '<div class="field full"><label for="f-mark">How to spot it on the rack</label><input id="f-mark" data-f="mark" value="' + esc(dv(p, "mark")) + '" placeholder="e.g. BC stamp on the foot, blue wax dot"></div>' +
+      "</div></section>";
+
+    // Firing
+    h += '<section class="panel"><div class="panel-head"><h3>Firing</h3></div><div class="fields">' +
+      '<div class="field"><label for="f-bc">Bisque cone</label><select id="f-bc" data-f="bisqueCone">' + optionList(CONES, dv(p, "bisqueCone"), "—") + "</select></div>" +
+      '<div class="field"><label for="f-bd">Bisque fired</label><input id="f-bd" type="date" data-f="bisqueFiredOn" value="' + esc(dv(p, "bisqueFiredOn")) + '"></div>' +
+      '<div class="field"><label for="f-gc">Glaze cone</label><select id="f-gc" data-f="glazeCone">' + optionList(CONES, dv(p, "glazeCone"), "—") + "</select></div>" +
+      '<div class="field"><label for="f-gd">Glaze fired</label><input id="f-gd" type="date" data-f="glazeFiredOn" value="' + esc(dv(p, "glazeFiredOn")) + '"></div>' +
+      '<div class="field full"><label for="f-atm">Atmosphere</label><select id="f-atm" data-f="atmosphere">' + optionList(ATMOS, dv(p, "atmosphere"), "—") + "</select></div>" +
+      '</div><p class="hint">Fired dates fill in on their own when you tap “Found it”. Change them to the rack’s unload date if you like.</p></section>';
+
+    // Glazes
+    var apps = p.glazeApps || [];
+    h += '<section class="panel"><div class="panel-head"><h3>Glazes</h3><button class="link-btn" data-a="add-app">+ Add glaze</button></div>';
+    h += apps.length ? '<div class="apps">' + apps.map(function (a) {
+      var g = a.glazeId && glaze(a.glazeId);
+      var meta = [a.method, a.coats ? a.coats + (a.coats == 1 ? " coat" : " coats") : "", a.area].filter(Boolean).join(" · ");
+      return '<div class="app">' + swatch(g) + '<button class="app-text" data-a="edit-app" data-id="' + a.id + '"><div class="app-name">' + esc(appName(a)) + '</div><div class="app-meta">' + esc(meta) + (a.notes ? " · " + esc(a.notes) : "") + "</div></button>" +
+        (g ? '<button class="link-btn" data-a="open-glaze" data-id="' + g.id + '">Recipe</button>' : "") + "</div>";
+    }).join("") + "</div>" : '<p class="hint" style="margin:0">No glazes yet. Add them in the order you applied them.</p>';
+    h += "</section>";
+
+    // Tools
+    var tools = p.tools || [];
+    h += '<section class="panel"><div class="panel-head"><h3>Carving &amp; tools</h3></div>';
+    h += tools.length ? '<div class="tags">' + tools.map(function (t, i) {
+      return '<span class="tag">' + esc(t) + '<button data-a="rm-tool" data-i="' + i + '" aria-label="Remove ' + esc(t) + '">' + ICON.x.replace("<svg", '<svg width="12" height="12"') + "</button></span>";
+    }).join("") + "</div>" : "";
+    h += '<div class="inline-add"><input id="tool-new" list="dl-tools" value="' + esc(S.draft._tool || "") + '" placeholder="Add a tool, e.g. Loop tool #3" aria-label="Add a tool"><button class="btn" data-a="add-tool">Add</button></div>';
+    h += '<div class="field" style="margin-top:12px"><label for="f-tech">Technique</label><textarea id="f-tech" data-f="technique" placeholder="e.g. Carved a spiral at leather hard, then chattered the lower third">' + esc(dv(p, "technique")) + "</textarea></div></section>";
+
+    // Photos
+    h += '<section class="panel"><div class="panel-head"><h3>Photos</h3></div>';
+    if (!S.assets) h += '<p class="hint" style="margin:0">Photos are unavailable right now.</p>';
+    else {
+      h += '<div class="photos">' + photos.map(function (ph) {
+        return '<button class="ph-tile" data-a="view-photo" data-id="' + ph.id + '"><img src="' + blob(ph.id) + '" style="object-position:' + posCss(ph.pos) + '" alt="" loading="lazy"><span class="ph-lbl">' + esc(stage(ph.stage).short) + "</span>" + (cid === ph.id ? '<span class="star">Cover</span>' : "") + "</button>";
+      }).join("") + '<button class="ph-add" data-a="add-photo">+ Add photos</button></div>';
+      h += '<p class="hint">Tap a photo to caption it, retag it, or make it the cover.</p>';
+    }
+    h += "</section>";
+
+    // Notes
+    var notes = (p.notes || []).slice().reverse();
+    h += '<section class="panel"><div class="panel-head"><h3>Notes</h3></div>' +
+      '<textarea id="note-new" placeholder="What happened, what you’d change next time…" aria-label="New note" style="min-height:4em">' + esc(S.draft._note || "") + "</textarea>" +
+      '<div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="btn" data-a="add-note">Add note</button></div>';
+    if (notes.length) {
+      h += '<ul class="notes">' + notes.map(function (n) {
+        return '<li class="note"><div class="note-body"><span class="note-date">' + esc(fmtDate(n.at)) + " · " + esc(stage(n.stage).short) + "</span>" + esc(n.text) + '</div><button class="x-btn" data-a="rm-note" data-id="' + n.id + '" aria-label="Delete note">' + ICON.x + "</button></li>";
+      }).join("") + "</ul>";
+    }
+    h += "</section>";
+
+    h += '<div style="margin-top:22px;display:flex;flex-direction:column;gap:10px"><button class="btn primary block" data-a="save" id="save-bottom">Save changes</button><button class="btn danger block" data-a="del-piece">Delete this piece</button></div>';
+    return h + "</div>";
+  }
+
+  /* Glaze detail */
+  function viewGlaze() {
+    var g = glaze(S.id);
+    if (!g) return bar("Glaze", { back: true }) + '<div class="wrap"><div class="empty"><p>This glaze was deleted.</p></div></div>';
+    var h = bar(g.name || "Untitled glaze", { back: true, save: true, sub: [g.cone ? "Cone " + g.cone : "", g.atmosphere].filter(Boolean).join(" · ") });
+    h += '<div class="wrap">';
+    if (g.photoId) h += heroHtml(g.photoId, g.photoPos, S.assets ? '<button class="btn" data-a="add-glaze-photo">Replace test tile</button>' : "");
+    else if (S.assets) h += '<div class="hero"><button class="hero-empty" data-a="add-glaze-photo">Add a test tile photo</button></div>';
+
+    h += '<section class="panel"><div class="panel-head"><h3>About</h3></div><div class="fields">' +
+      '<div class="field full"><label for="g-name">Name</label><input id="g-name" class="name-input" data-gf="name" value="' + esc(dv(g, "name")) + '"></div>' +
+      '<div class="field"><label for="g-kind">Type</label><select id="g-kind" data-gf="kind">' + optionList(KINDS, dv(g, "kind")) + "</select></div>" +
+      '<div class="field"><label for="g-brand">Brand / source</label><input id="g-brand" data-gf="brand" value="' + esc(dv(g, "brand")) + '" placeholder="e.g. Amaco PC-20"></div>' +
+      '<div class="field"><label for="g-cone">Cone</label><select id="g-cone" data-gf="cone">' + optionList(CONES, dv(g, "cone"), "—") + "</select></div>" +
+      '<div class="field"><label for="g-atm">Atmosphere</label><select id="g-atm" data-gf="atmosphere">' + optionList(ATMOS, dv(g, "atmosphere"), "—") + "</select></div>" +
+      '<div class="field full"><label for="g-color">Swatch color</label><div style="display:flex;gap:10px;align-items:center"><input id="g-color" type="color" data-gf="color" value="' + esc(dv(g, "color") || "#A8D5CF") + '"><span class="hint" style="margin:0">Shown when there’s no test tile photo.</span></div></div>' +
+      "</div></section>";
+
+    h += recipePanel(g, "recipe", "Recipe", "Base materials. Amounts in grams or parts; percentages work out on their own.");
+    h += recipePanel(g, "additions", "Colorants & additions", "Added on top of the base, e.g. 2% red iron oxide.");
+
+    h += '<section class="panel"><div class="panel-head"><h3>Notes</h3></div><textarea id="g-notes" data-gf="notes" placeholder="Specific gravity, how thick to apply, how it breaks over texture, runs…">' + esc(dv(g, "notes")) + "</textarea></section>";
+
+    var used = S.pieces.filter(function (p) { return (p.glazeApps || []).some(function (a) { return a.glazeId === g.id; }); });
+    h += '<section class="panel"><div class="panel-head"><h3>Used on</h3></div>';
+    h += used.length ? '<div class="used-on">' + sortPieces(used).map(function (p) { return rowHtml(p); }).join("") + "</div>" : '<p class="hint" style="margin:0">Not on any piece yet.</p>';
+    h += "</section>";
+    h += '<div style="margin-top:22px;display:flex;flex-direction:column;gap:10px"><button class="btn primary block" data-a="save" id="save-bottom">Save changes</button><button class="btn danger block" data-a="del-glaze">Delete this glaze</button></div>';
+    return h + "</div>";
+  }
+  function recipePanel(g, kind, title, hint) {
+    var rows = dv(g, kind) || [];
+    var total = rows.reduce(function (s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    var baseTotal = (dv(g, "recipe") || []).reduce(function (s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    var h = '<section class="panel"><div class="panel-head"><h3>' + esc(title) + '</h3><button class="link-btn" data-a="row-add" data-k="' + kind + '">+ Add line</button></div>';
+    if (!rows.length) return h + '<p class="hint" style="margin:0">' + esc(hint) + "</p></section>";
+    h += '<table class="recipe"><tbody>' + rows.map(function (r, i) {
+      var amt = parseFloat(r.amount) || 0;
+      var pct = baseTotal ? (amt / baseTotal * 100) : 0;
+      return '<tr class="rrow" data-kind="' + kind + '"><td><input id="' + kind + "-m-" + i + '" class="r-mat" list="dl-materials" value="' + esc(r.material) + '" placeholder="Material" aria-label="Material"></td>' +
+        '<td class="amt"><input id="' + kind + "-a-" + i + '" class="r-amt mono" inputmode="decimal" value="' + esc(r.amount) + '" placeholder="0" aria-label="Amount"></td>' +
+        '<td class="pct mono" data-pct>' + (amt && baseTotal ? pct.toFixed(1) + "%" : "") + "</td>" +
+        '<td class="rm"><button class="x-btn" data-a="row-rm" data-k="' + kind + '" data-i="' + i + '" aria-label="Remove line">' + ICON.x + "</button></td></tr>";
+    }).join("") + "</tbody></table>";
+    h += '<div class="recipe-foot"><span>' + (kind === "recipe" ? "Base total" : "Additions total") + '</span><span class="mono" id="total-' + kind + '">' + fmtNum(total) + "</span></div>";
+    return h + "</section>";
+  }
+  function fmtNum(n) { return (Math.round(n * 100) / 100).toString(); }
+
+  /* ---------- sheets ---------- */
+  function openSheet(s) { S.sheet = s; renderSheet(); }
+  function closeSheet() { S.sheet = null; renderSheet(); if (S.pending) softRender(); }
+  function renderSheet() {
+    var root = $("sheet-root");
+    var s = S.sheet;
+    if (!s) { root.innerHTML = ""; document.body.style.overflow = ""; return; }
+    document.body.style.overflow = "hidden";
+    var h = "";
+    if (s.type === "new-piece") {
+      h = '<h2 id="sh-title">New piece</h2><div class="fields stack-sm">' +
+        '<div class="field full"><label for="np-name">Name</label><input id="np-name" placeholder="e.g. Speckled mug #4" autocomplete="off"></div>' +
+        '<div class="field"><label for="np-form">Form</label><input id="np-form" list="dl-forms" placeholder="Mug"></div>' +
+        '<div class="field"><label for="np-clay">Clay body</label><input id="np-clay" list="dl-clay" placeholder="e.g. B-Mix 5"></div>' +
+        '<div class="field"><label for="np-stage">Where is it now?</label><select id="np-stage">' + optionList(STAGES.map(function (x) { return [x.key, x.label]; }), "wet") + "</select></div>" +
+        '<div class="field"><label for="np-since">Put there on</label><input id="np-since" type="date" value="' + todayISO() + '"></div>' +
+        '<div class="field"><label for="np-date">Started</label><input id="np-date" type="date" value="' + todayISO() + '"></div>' +
+        '</div><div class="actions"><button class="btn" data-a="close-sheet">Cancel</button><button class="btn primary" data-a="create-piece">Add piece</button></div>';
+    } else if (s.type === "new-glaze") {
+      h = '<h2 id="sh-title">New glaze</h2><div class="fields stack-sm">' +
+        '<div class="field full"><label for="ng-name">Name</label><input id="ng-name" placeholder="e.g. Floating Blue" autocomplete="off"></div>' +
+        '<div class="field"><label for="ng-kind">Type</label><select id="ng-kind">' + optionList(KINDS, "recipe") + "</select></div>" +
+        '<div class="field"><label for="ng-cone">Cone</label><select id="ng-cone">' + optionList(CONES, "6", "—") + "</select></div>" +
+        '</div><div class="actions"><button class="btn" data-a="close-sheet">Cancel</button><button class="btn primary" data-a="create-glaze">Add glaze</button></div>';
+    } else if (s.type === "app") {
+      var p = piece(S.id); var a = s.appId ? (p.glazeApps || []).find(function (x) { return x.id === s.appId; }) : null;
+      a = a || { method: "Dipped", coats: "1", area: "Whole piece" };
+      var gl = S.glazes.slice().sort(function (x, y) { return String(x.name).localeCompare(String(y.name)); });
+      var sel = a.glazeId || (s.appId ? "__custom" : (gl[0] ? gl[0].id : "__new"));
+      h = '<h2 id="sh-title">' + (s.appId ? "Edit glaze" : "Add a glaze") + '</h2><div class="fields stack-sm">' +
+        '<div class="field full"><label for="ap-glaze">Glaze</label><select id="ap-glaze">' +
+        gl.map(function (g) { return '<option value="' + g.id + '"' + (sel === g.id ? " selected" : "") + ">" + esc(g.name || "Untitled glaze") + (g.cone ? " (cone " + esc(g.cone) + ")" : "") + "</option>"; }).join("") +
+        '<option value="__new"' + (sel === "__new" || sel === "__custom" ? " selected" : "") + ">New glaze, not in my library…</option></select></div>" +
+        '<div class="field full" id="ap-new-wrap"' + (sel === "__new" || sel === "__custom" ? "" : " hidden") + '><label for="ap-newname">New glaze name</label><input id="ap-newname" value="' + esc(a.glazeId ? "" : a.glazeName) + '" placeholder="e.g. Studio Celadon"><p class="hint">It’ll be added to your glaze library so you can fill in the recipe later.</p></div>' +
+        '<div class="field"><label for="ap-method">Applied by</label><select id="ap-method">' + optionList(APPLY, a.method) + "</select></div>" +
+        '<div class="field"><label for="ap-coats">Coats / dip seconds</label><input id="ap-coats" inputmode="decimal" value="' + esc(a.coats) + '"></div>' +
+        '<div class="field full"><label for="ap-area">Where on the piece</label><select id="ap-area">' + optionList(AREAS, a.area) + "</select></div>" +
+        '<div class="field full"><label for="ap-notes">Notes</label><input id="ap-notes" value="' + esc(a.notes) + '" placeholder="e.g. 3-second dip, wiped 1cm from foot"></div>' +
+        '</div><div class="actions">' + (s.appId ? '<button class="btn danger" data-a="rm-app">Remove</button>' : '<button class="btn" data-a="close-sheet">Cancel</button>') +
+        '<button class="btn primary" data-a="save-app">' + (s.appId ? "Save" : "Add") + "</button></div>";
+    } else if (s.type === "unsaved") {
+      h = '<h2 id="sh-title">Save your changes?</h2><p>You edited this page but haven’t saved yet.</p><div class="actions"><button class="btn" data-a="unsaved-discard">Discard</button><button class="btn primary" data-a="unsaved-save">Save</button></div>';
+    } else if (s.type === "confirm") {
+      h = '<h2 id="sh-title">' + esc(s.title) + "</h2><p>" + esc(s.body) + '</p><div class="actions"><button class="btn" data-a="close-sheet">Cancel</button><button class="btn primary" style="background:var(--danger);border-color:var(--danger);color:var(--surface-2)" data-a="confirm-yes">' + esc(s.yes) + "</button></div>";
+    } else if (s.type === "photo") {
+      var pp = piece(S.id); var ph = pp && (pp.photos || []).find(function (x) { return x.id === s.photoId; });
+      if (!ph) { S.sheet = null; root.innerHTML = ""; document.body.style.overflow = ""; return; }
+      root.innerHTML = '<div class="lightbox" role="dialog" aria-label="Photo"><div class="lb-top"><button class="icon-btn" data-a="close-sheet" aria-label="Close">' + ICON.x + '</button></div>' +
+        '<div class="lb-img"><img src="' + blob(ph.id) + '" alt=""></div><div class="lb-bar">' +
+        '<input id="ph-caption" data-pf="caption" value="' + esc(ph.caption) + '" placeholder="Add a caption" aria-label="Caption">' +
+        '<div class="lb-row"><select id="ph-stage" data-pf="stage" aria-label="Stage in photo">' + optionList(STAGES.map(function (x) { return [x.key, x.short]; }), ph.stage) + "</select>" +
+        (pp.coverId === ph.id ? '<button class="btn" disabled>Cover photo</button>' : '<button class="btn" data-a="photo-cover">Make cover</button>') +
+        '<button class="btn danger" data-a="photo-del">Delete</button></div></div></div>';
+      return;
+    } else if (s.type === "glaze-photo") {
+      root.innerHTML = '<div class="lightbox" role="dialog" aria-label="Test tile"><div class="lb-top"><button class="icon-btn" data-a="close-sheet" aria-label="Close">' + ICON.x + '</button></div><div class="lb-img"><img src="' + blob(s.photoId) + '" alt=""></div></div>';
+      return;
+    }
+    root.innerHTML = '<div class="backdrop"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-title">' + h + "</div></div>";
+    var first = root.querySelector("#np-name, #ng-name");
+    if (first) setTimeout(function () { first.focus(); }, 60);
+  }
+
+  /* ---------- toast ---------- */
+  function toast(msg, undo, sticky) {
+    clearTimeout(S.toastTimer);
+    S.toastUndo = undo || null;
+    $("toast-root").innerHTML = msg ? '<div class="toast" role="status"><span>' + esc(msg) + "</span>" + (undo ? '<button data-a="undo">Undo</button>' : "") + "</div>" : "";
+    if (msg && !sticky) S.toastTimer = setTimeout(function () { $("toast-root").innerHTML = ""; S.toastUndo = null; }, 5000);
+  }
+
+  /* ---------- data ---------- */
+  var queues = {};
+  function queued(path, fn) {
+    var q = (queues[path] || Promise.resolve()).then(fn, fn);
+    queues[path] = q.catch(function () {});
+    return q;
+  }
+  var inflight = {};
+  function tracked(path, fn) {
+    inflight[path] = (inflight[path] || 0) + 1;
+    return queued(path, fn).finally(function () { inflight[path]--; });
+  }
+  function merge(table, local, rows) {
+    return rows.map(function (d) {
+      if (inflight[table + "/" + d.id]) { var mine = local.find(function (x) { return x.id === d.id; }); if (mine) return mine; }
+      return Object.assign({}, d.data(), { id: d.id });
+    });
+  }
+  function writeErr(err) {
+    console.error(err);
+    var code = err && err.code;
+    if (/jwt|token|auth/i.test((err && err.message) || "") || code === "PGRST301") toast("You’ve been signed out. Sign in again to save.");
+    else if (code === "42501") toast("Couldn’t save. This account doesn’t have access.");
+    else if (code === "quota_exceeded") toast("The log is full. Delete some old pieces to make room.");
+    else toast("Couldn’t save that change. Check your connection and try again.");
+  }
+  function patchPiece(id, patch) {
+    var p = piece(id); if (!p) return Promise.resolve();
+    patch.updatedAt = nowISO();
+    Object.assign(p, patch);
+    return tracked("pieces/" + id, function () { return S.db.doc("pieces/" + id).update(patch); }).then(function () { return true; }, function (e) { writeErr(e); return false; });
+  }
+  function patchGlaze(id, patch) {
+    var g = glaze(id); if (!g) return Promise.resolve();
+    patch.updatedAt = nowISO();
+    Object.assign(g, patch);
+    return tracked("glazes/" + id, function () { return S.db.doc("glazes/" + id).update(patch); }).then(function () { return true; }, function (e) { writeErr(e); return false; });
+  }
+  function setStage(id, key, withUndo) {
+    var p = piece(id); if (!p || p.stage === key) return;
+    if (S.view === "piece" && S.id === id) { delete S.draft.stageAt; delete S.draft.location; delete S.draft.bisqueFiredOn; delete S.draft.glazeFiredOn; }
+    var prev = { stage: p.stage, stageAt: p.stageAt, history: (p.history || []).slice(), location: p.location || "", bisqueFiredOn: p.bisqueFiredOn || "", glazeFiredOn: p.glazeFiredOn || "" };
+    var now = nowISO();
+    var patch = { stage: key, stageAt: now, history: (p.history || []).concat([{ stage: key, at: now }]), location: "" };
+    var ni = stageIdx(key);
+    if (ni >= stageIdx("bisqued") && !p.bisqueFiredOn) patch.bisqueFiredOn = todayISO();
+    if (ni >= stageIdx("done") && !p.glazeFiredOn) patch.glazeFiredOn = todayISO();
+    patchPiece(id, patch);
+    render();
+    if (withUndo) {
+      toast((p.name || "Piece") + " → " + stage(key).short, function () { patchPiece(id, prev); render(); });
+    }
+  }
+  function advance(id) {
+    var p = piece(id); if (!p) return;
+    var i = stageIdx(p.stage); if (i >= STAGES.length - 1) return;
+    setStage(id, STAGES[i + 1].key, true);
+  }
+  function createPiece() {
+    var name = $("np-name").value.trim();
+    if (!name) { $("np-name").focus(); $("np-name").placeholder = "Give it a name first"; return; }
+    var st = $("np-stage").value || "wet", now = nowISO();
+    var since = $("np-since").value;
+    var stAt = !since || since === todayISO() ? now : since;
+    var data = {
+      name: name, form: $("np-form").value.trim(), method: "", clayBody: $("np-clay").value.trim(),
+      startedOn: $("np-date").value || todayISO(), mark: "", location: "",
+      stage: st, stageAt: stAt, history: [{ stage: st, at: stAt }],
+      bisqueCone: "", bisqueFiredOn: "", glazeCone: "", glazeFiredOn: "", atmosphere: "",
+      glazeApps: [], tools: [], technique: "", photos: [], coverId: "", notes: [],
+      createdAt: now, updatedAt: now
+    };
+    var btn = document.querySelector('[data-a="create-piece"]'); if (btn) btn.disabled = true;
+    S.db.collection("pieces").add(data).then(function (ref) {
+      S.pieces.push(Object.assign({ id: ref.id }, data));
+      S.sheet = null; renderSheet();
+      go("piece", ref.id);
+    }).catch(function (e) { if (btn) btn.disabled = false; writeErr(e); });
+  }
+  function createGlaze(name, kind, cone) {
+    var now = nowISO();
+    var data = { name: name, kind: kind || "recipe", brand: "", cone: cone || "", atmosphere: "", color: "#A8D5CF", recipe: [], additions: [], notes: "", photoId: "", createdAt: now, updatedAt: now };
+    return S.db.collection("glazes").add(data).then(function (ref) {
+      var g = Object.assign({ id: ref.id }, data); S.glazes.push(g); return g;
+    });
+  }
+  function saveApp() {
+    var p = piece(S.id); if (!p) return;
+    var sel = $("ap-glaze").value;
+    var fields = { method: $("ap-method").value, coats: $("ap-coats").value.trim(), area: $("ap-area").value, notes: $("ap-notes").value.trim() };
+    var ready;
+    if (sel === "__new") {
+      var nm = $("ap-newname").value.trim();
+      if (!nm) { $("ap-newname").focus(); return; }
+      ready = createGlaze(nm, "studio", p.glazeCone || "").then(function (g) { return { glazeId: g.id, glazeName: g.name }; });
+    } else {
+      var g = glaze(sel);
+      ready = Promise.resolve({ glazeId: sel, glazeName: g ? g.name : "" });
+    }
+    ready.then(function (ref) {
+      var apps = (p.glazeApps || []).slice();
+      if (S.sheet.appId) {
+        apps = apps.map(function (a) { return a.id === S.sheet.appId ? Object.assign({}, a, fields, ref) : a; });
+      } else {
+        apps.push(Object.assign({ id: rid() }, fields, ref));
+      }
+      patchPiece(p.id, { glazeApps: apps });
+      closeSheet(); render();
+    }).catch(writeErr);
+  }
+  function collectRows(kind) {
+    return Array.prototype.map.call(document.querySelectorAll('.rrow[data-kind="' + kind + '"]'), function (tr) {
+      return { material: tr.querySelector(".r-mat").value.trim(), amount: tr.querySelector(".r-amt").value.trim() };
+    });
+  }
+  function updateTotals() {
+    var base = collectRows("recipe"), bt = base.reduce(function (s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    ["recipe", "additions"].forEach(function (k) {
+      var rows = collectRows(k), tot = rows.reduce(function (s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+      var t = $("total-" + k); if (t) t.textContent = fmtNum(tot);
+      document.querySelectorAll('.rrow[data-kind="' + k + '"]').forEach(function (tr, i) {
+        var a = parseFloat(rows[i].amount) || 0;
+        tr.querySelector("[data-pct]").textContent = a && bt ? (a / bt * 100).toFixed(1) + "%" : "";
+      });
+    });
+  }
+  function shrink(file) {
+    return new Promise(function (resolve) {
+      if (file.type && !/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type)) { resolve(file); return; }
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, 1800 / Math.max(w, h));
+        if (k === 1 && file.size < 1500000 && /jpeg|png|webp/i.test(file.type)) { URL.revokeObjectURL(url); resolve(file); return; }
+        var c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(h * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { resolve(b && b.size ? b : file); }, "image/jpeg", 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+  function uploadErr(e) {
+    var c = e && e.code;
+    if (c === "unsupported_type") return "That file type isn’t supported. Use a JPEG or PNG photo.";
+    if (c === "too_large" || (e && String(e.statusCode) === "413")) return "That photo is too large.";
+    if (c === "quota_or_state") return "Photo storage is full. Delete some old photos first.";
+    if (c === "rate_limited") return "Too many uploads at once. Wait a moment and try again.";
+    return "A photo didn’t upload. Try again.";
+  }
+  async function handleFiles(files) {
+    var t = S.photoTarget; S.photoTarget = null;
+    if (!t || !S.assets || !files.length) return;
+    if (t.kind === "glaze") files = files.slice(0, 1);
+    var ids = [], failMsg = "";
+    for (var i = 0; i < files.length; i++) {
+      toast("Uploading photo " + (i + 1) + " of " + files.length + "…", null, true);
+      try {
+        var b = await shrink(files[i]);
+        var res = await S.assets.upload(b, b.type ? undefined : { type: "image/jpeg" });
+        ids.push(res.id);
+      } catch (e) { console.error(e); failMsg = uploadErr(e); }
+    }
+    if (ids.length) {
+      if (t.kind === "piece") {
+        var p = piece(t.id);
+        if (p) {
+          var now = nowISO();
+          patchPiece(p.id, { photos: (p.photos || []).concat(ids.map(function (id) { return { id: id, stage: p.stage, caption: "", at: now }; })) });
+        }
+      } else {
+        var g = glaze(t.id);
+        if (g) {
+          var old = g.photoId;
+          patchGlaze(g.id, { photoId: ids[0] }).then(function () { if (old) S.assets.delete(old).catch(function () {}); });
+        }
+      }
+      softRender();
+    }
+    toast(failMsg || (ids.length === 1 ? "Photo added" : ids.length + " photos added"));
+  }
+
+  /* ---------- save ---------- */
+  function saveDraft() {
+    var d = S.draft; S.draft = {};
+    var patch = {}, pr;
+    Object.keys(d).forEach(function (k) {
+      if (k.charAt(0) === "_") return;
+      var v = d[k]; patch[k] = typeof v === "string" ? v.trim() : v;
+    });
+    if (has(patch, "name") && !patch.name) delete patch.name;
+    if (S.view === "piece") {
+      var p = piece(S.id); if (!p) return Promise.resolve(false);
+      if (has(patch, "stageAt") && (!patch.stageAt || patch.stageAt === localISO(p.stageAt))) delete patch.stageAt;
+      if (d._tool && d._tool.trim()) patch.tools = (p.tools || []).concat([d._tool.trim()]);
+      if (d._note && d._note.trim()) patch.notes = (p.notes || []).concat([{ id: rid(), at: nowISO(), stage: p.stage, text: d._note.trim() }]);
+      pr = Object.keys(patch).length ? patchPiece(p.id, patch) : Promise.resolve(true);
+    } else if (S.view === "glaze") {
+      var g = glaze(S.id); if (!g) return Promise.resolve(false);
+      ["recipe", "additions"].forEach(function (k) { if (patch[k]) patch[k] = patch[k].filter(function (r) { return r.material || r.amount; }); });
+      pr = Object.keys(patch).length ? patchGlaze(g.id, patch) : Promise.resolve(true);
+    } else pr = Promise.resolve(true);
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    render();
+    return pr.then(function (ok) { if (ok) toast("Saved"); return ok; });
+  }
+  function leave(fn) {
+    S.repos = null;
+    if (isDirty()) { openSheet({ type: "unsaved", then: fn }); return; }
+    S.draft = {}; fn();
+  }
+  function onEdit(t) {
+    var f = t.getAttribute && (t.getAttribute("data-f") || t.getAttribute("data-gf"));
+    if (f && (S.view === "piece" || S.view === "glaze")) S.draft[f] = t.value;
+    else if (t.id === "note-new") S.draft._note = t.value;
+    else if (t.id === "tool-new") S.draft._tool = t.value;
+    else if (t.closest && t.closest(".rrow")) { var k = t.closest(".rrow").getAttribute("data-kind"); S.draft[k] = collectRows(k); updateTotals(); }
+    else return;
+    updateSaveBtn();
+  }
+  function saveRepos() {
+    var r = S.repos; if (!r) return;
+    var pos = { x: Math.round(r.x * 10) / 10, y: Math.round(r.y * 10) / 10 };
+    S.repos = null;
+    if (S.view === "piece") {
+      var p = piece(S.id);
+      if (p) patchPiece(p.id, { photos: (p.photos || []).map(function (x) { return x.id === r.photoId ? Object.assign({}, x, { pos: pos }) : x; }) }).then(function (ok) { if (ok) toast("Position saved"); });
+    } else if (S.view === "glaze") {
+      patchGlaze(S.id, { photoPos: pos }).then(function (ok) { if (ok) toast("Position saved"); });
+    }
+    render();
+  }
+  function dragTo(e) {
+    var d = S.drag, img = $("hero-img"), fr = $("hero-frame");
+    if (!d || !img || !fr || !S.repos) return;
+    var bw = fr.clientWidth, bh = fr.clientHeight, nw = img.naturalWidth || bw, nh = img.naturalHeight || bh;
+    var k = Math.max(bw / nw, bh / nh), ox = nw * k - bw, oy = nh * k - bh;
+    var dx = e.clientX - d.x, dy = e.clientY - d.y;
+    S.repos.x = ox > 1 ? Math.min(100, Math.max(0, d.px - dx / ox * 100)) : 50;
+    S.repos.y = oy > 1 ? Math.min(100, Math.max(0, d.py - dy / oy * 100)) : 50;
+    img.style.objectPosition = posCss(S.repos);
+  }
+  document.addEventListener("pointerdown", function (e) {
+    if (!S.repos || e.target.id !== "hero-img") return;
+    e.preventDefault();
+    S.drag = { x: e.clientX, y: e.clientY, px: S.repos.x, py: S.repos.y };
+    try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  document.addEventListener("pointermove", function (e) { if (S.drag) { e.preventDefault(); dragTo(e); } }, { passive: false });
+  function endDrag() { S.drag = null; }
+  document.addEventListener("pointerup", endDrag);
+  document.addEventListener("pointercancel", endDrag);
+  document.addEventListener("touchmove", function (e) { if (S.drag) e.preventDefault(); }, { passive: false });
+
+  /* ---------- navigation ---------- */
+  function go(view, id) {
+    S.stack.push({ view: S.view, id: S.id });
+    S.draft = {}; S.repos = null;
+    S.view = view; S.id = id || null;
+    render(); window.scrollTo(0, 0);
+  }
+  function back() {
+    var prev = S.stack.pop() || { view: S.tab, id: null };
+    S.draft = {}; S.repos = null;
+    S.view = prev.view; S.id = prev.id;
+    render(); window.scrollTo(0, 0);
+  }
+
+  /* ---------- events ---------- */
+  document.addEventListener("click", function (e) {
+    if (e.target.classList && e.target.classList.contains("backdrop")) { closeSheet(); return; }
+    var el = e.target.closest("[data-a]");
+    if (!el) return;
+    var a = el.getAttribute("data-a"), id = el.getAttribute("data-id"), k = el.getAttribute("data-k");
+    var p = S.view === "piece" ? piece(S.id) : null;
+    switch (a) {
+      case "tab":
+        leave(function () {
+          S.tab = k; S.view = k; S.id = null; S.stack = [];
+          try { localStorage.setItem("kiln-tab", k); } catch (err) {}
+          render(); window.scrollTo(0, 0);
+        }); break;
+      case "open-piece": if (S.sheet) closeSheet(); leave(function () { go("piece", id); }); break;
+      case "open-glaze": leave(function () { go("glaze", id); }); break;
+      case "back": leave(back); break;
+      case "save": saveDraft(); break;
+      case "retry": location.reload(); break;
+      case "sign-out": SB.auth.signOut().finally(function () { location.reload(); }); break;
+      case "unsaved-save":
+        var then1 = S.sheet.then; S.sheet = null; renderSheet();
+        saveDraft().then(function (ok) { if (ok) then1(); }); break;
+      case "unsaved-discard":
+        var then2 = S.sheet.then; S.sheet = null; renderSheet(); S.draft = {}; then2(); break;
+      case "hero-open":
+        if (S.view === "piece") { if (p) openSheet({ type: "photo", photoId: coverOf(p) }); }
+        else { var gh = glaze(S.id); if (gh && gh.photoId) openSheet({ type: "glaze-photo", photoId: gh.photoId }); }
+        break;
+      case "repos-start":
+        var startPos = S.view === "piece" ? ((p && p.photos || []).find(function (x) { return x.id === id; }) || {}).pos : (glaze(S.id) || {}).photoPos;
+        var sp = posOf(startPos); S.repos = { photoId: id, x: sp.x, y: sp.y }; render(); break;
+      case "repos-cancel": S.repos = null; render(); break;
+      case "repos-center": if (S.repos) { S.repos.x = 50; S.repos.y = 50; var hi = $("hero-img"); if (hi) hi.style.objectPosition = "50% 50%"; } break;
+      case "repos-save": saveRepos(); break;
+      case "new-piece": openSheet({ type: "new-piece" }); break;
+      case "create-piece": createPiece(); break;
+      case "new-glaze": openSheet({ type: "new-glaze" }); break;
+      case "create-glaze":
+        var nm = $("ng-name").value.trim();
+        if (!nm) { $("ng-name").focus(); return; }
+        el.disabled = true;
+        createGlaze(nm, $("ng-kind").value, $("ng-cone").value).then(function (g) { S.sheet = null; renderSheet(); go("glaze", g.id); })
+          .catch(function (err) { el.disabled = false; writeErr(err); });
+        break;
+      case "close-sheet": closeSheet(); break;
+      case "advance": advance(id); break;
+      case "set-stage": setStage(S.id, k, true); break;
+      case "jump":
+        var sec = $("sec-" + k); if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" }); break;
+      case "filter": S.filter = k; render(); break;
+      case "undo": if (S.toastUndo) { var u = S.toastUndo; toast(""); u(); } break;
+      case "add-photo":
+        if (!S.assets) return;
+        S.photoTarget = { kind: "piece", id: S.id }; $("photo-input").multiple = true; $("photo-input").click(); break;
+      case "add-glaze-photo":
+        if (!S.assets) return;
+        S.photoTarget = { kind: "glaze", id: S.id }; $("photo-input").multiple = false; $("photo-input").click(); break;
+      case "view-photo": openSheet({ type: "photo", photoId: id }); break;
+      case "view-glaze-photo": var gg = glaze(S.id); if (gg && gg.photoId) openSheet({ type: "glaze-photo", photoId: gg.photoId }); break;
+      case "photo-cover": if (p) { patchPiece(p.id, { coverId: S.sheet.photoId }); renderSheet(); } break;
+      case "photo-del":
+        var pid = S.sheet.photoId;
+        openSheet({ type: "confirm", title: "Delete this photo?", body: "It will be removed from this piece for good.", yes: "Delete photo", onYes: function () {
+          var pc = piece(S.id); if (!pc) return;
+          patchPiece(pc.id, { photos: (pc.photos || []).filter(function (x) { return x.id !== pid; }), coverId: pc.coverId === pid ? "" : (pc.coverId || "") })
+            .then(function () { if (S.assets) S.assets.delete(pid).catch(function () {}); });
+        } });
+        break;
+      case "add-tool":
+        var ti = $("tool-new"), tv = ti.value.trim();
+        if (!tv || !p) { ti.focus(); return; }
+        delete S.draft._tool;
+        patchPiece(p.id, { tools: (p.tools || []).concat([tv]) }); render(); $("tool-new").focus(); break;
+      case "rm-tool":
+        if (!p) return;
+        var tl = (p.tools || []).slice(); tl.splice(+el.getAttribute("data-i"), 1);
+        patchPiece(p.id, { tools: tl }); render(); break;
+      case "add-note":
+        var nt = $("note-new").value.trim();
+        if (!nt || !p) { $("note-new").focus(); return; }
+        delete S.draft._note;
+        patchPiece(p.id, { notes: (p.notes || []).concat([{ id: rid(), at: nowISO(), stage: p.stage, text: nt }]) });
+        render(); break;
+      case "rm-note":
+        if (!p) return;
+        var removed = (p.notes || []).slice();
+        patchPiece(p.id, { notes: removed.filter(function (n) { return n.id !== id; }) }); render();
+        toast("Note deleted", function () { patchPiece(p.id, { notes: removed }); render(); });
+        break;
+      case "add-app": openSheet({ type: "app" }); break;
+      case "edit-app": openSheet({ type: "app", appId: id }); break;
+      case "save-app": saveApp(); break;
+      case "rm-app":
+        if (p) { patchPiece(p.id, { glazeApps: (p.glazeApps || []).filter(function (x) { return x.id !== S.sheet.appId; }) }); }
+        closeSheet(); render(); break;
+      case "row-add":
+        var g1 = glaze(S.id); if (!g1) return;
+        S.draft[k] = (dv(g1, k) || []).concat([{ material: "", amount: "" }]); render();
+        var ins = document.querySelectorAll('.rrow[data-kind="' + k + '"] .r-mat'); if (ins.length) ins[ins.length - 1].focus();
+        break;
+      case "row-rm":
+        var g2 = glaze(S.id); if (!g2) return;
+        var rows = collectRows(k); rows.splice(+el.getAttribute("data-i"), 1);
+        S.draft[k] = rows; render(); break;
+      case "del-piece":
+        openSheet({ type: "confirm", title: "Delete this piece?", body: "Its photos, glaze notes and history will be removed for good.", yes: "Delete piece", onYes: function () {
+          var pc = piece(S.id); if (!pc) return;
+          var photos = pc.photos || [], pidx = pc.id;
+          S.db.doc("pieces/" + pidx).delete().then(function () {
+            if (S.assets) photos.forEach(function (x) { S.assets.delete(x.id).catch(function () {}); });
+            S.pieces = S.pieces.filter(function (x) { return x.id !== pidx; });
+            S.draft = {}; back(); toast("Piece deleted");
+          }).catch(writeErr);
+        } });
+        break;
+      case "del-glaze":
+        openSheet({ type: "confirm", title: "Delete this glaze?", body: "Pieces that used it keep the glaze name, but its recipe and test tile will be gone.", yes: "Delete glaze", onYes: function () {
+          var gz = glaze(S.id); if (!gz) return;
+          var gid = gz.id, photo = gz.photoId;
+          S.db.doc("glazes/" + gid).delete().then(function () {
+            if (photo && S.assets) S.assets.delete(photo).catch(function () {});
+            S.glazes = S.glazes.filter(function (x) { return x.id !== gid; });
+            S.draft = {}; back(); toast("Glaze deleted");
+          }).catch(writeErr);
+        } });
+        break;
+      case "confirm-yes":
+        var fn = S.sheet && S.sheet.onYes; S.sheet = null; renderSheet(); if (fn) fn(); break;
+    }
+  });
+
+  document.addEventListener("change", function (e) {
+    var t = e.target;
+    if (t.id === "photo-input") {
+      var files = Array.prototype.slice.call(t.files || []); t.value = "";
+      handleFiles(files); return;
+    }
+    if (t.id === "ap-glaze") { $("ap-new-wrap").hidden = t.value !== "__new"; return; }
+    if (t.closest && t.closest("#main")) { onEdit(t); return; }
+    var pf = t.getAttribute("data-pf");
+    if (pf && S.sheet && S.sheet.type === "photo") {
+      var pc = piece(S.id); if (!pc) return;
+      var pid = S.sheet.photoId;
+      patchPiece(pc.id, { photos: (pc.photos || []).map(function (x) { if (x.id !== pid) return x; var y = Object.assign({}, x); y[pf] = t.value.trim(); return y; }) });
+    }
+  });
+
+  document.addEventListener("input", function (e) {
+    if (e.target.id === "search") { S.search = e.target.value; var g = $("piece-grid"); if (g) g.innerHTML = pieceGrid(); }
+    else if (e.target.closest && e.target.closest("#main")) onEdit(e.target);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && e.target.id === "tool-new") { e.preventDefault(); document.querySelector('[data-a="add-tool"]').click(); }
+    if (e.key === "Enter" && (e.target.id === "np-name" || e.target.id === "ng-name")) { e.preventDefault(); document.querySelector('[data-a="create-piece"],[data-a="create-glaze"]').click(); }
+    if (e.key === "Escape" && S.sheet) closeSheet();
+  });
+  document.addEventListener("focusout", function () {
+    setTimeout(function () { if (S.pending && !S.sheet && !S.repos && !S.drag && !isEditing()) render(); }, 350);
+  });
+
+  /* ---------- Supabase storage ---------- */
+  var SB = null, USER = null;
+  function newId() {
+    try { return crypto.randomUUID().replace(/-/g, "").slice(0, 20); } catch (e) { return rid() + rid() + rid().slice(0, 4); }
+  }
+  function check(r) { if (r && r.error) throw r.error; return r; }
+  var Store = {
+    collection: function (table) {
+      return {
+        add: function (data) {
+          var id = newId();
+          return SB.from(table).insert({ id: id, data: data }).then(check).then(function () { return { id: id }; });
+        },
+        onSnapshot: function (cb, onErr) {
+          var timer = null;
+          function load() {
+            return SB.from(table).select("id,data").then(check).then(function (r) {
+              cb({ docs: r.data.map(function (row) { return { id: row.id, data: function () { return row.data || {}; } }; }) });
+            }).catch(onErr);
+          }
+          function soon() { clearTimeout(timer); timer = setTimeout(load, 300); }
+          SB.channel("live-" + table).on("postgres_changes", { event: "*", schema: "public", table: table }, soon).subscribe();
+          document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") soon(); });
+          window.addEventListener("online", soon);
+          load();
+        }
+      };
+    },
+    doc: function (path) {
+      var parts = path.split("/"), table = parts[0], id = parts[1];
+      return {
+        // The page updates its local copy first, so each save sends the whole current document.
+        update: function () {
+          var cur = table === "pieces" ? piece(id) : glaze(id);
+          if (!cur) return Promise.resolve();
+          var data = Object.assign({}, cur); delete data.id;
+          return SB.from(table).update({ data: data, updated_at: new Date().toISOString() }).eq("id", id).then(check);
+        },
+        delete: function () { return SB.from(table).delete().eq("id", id).then(check); }
+      };
+    }
+  };
+  var Assets = {
+    upload: function (file) {
+      var type = file.type || "image/jpeg";
+      var ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : type === "image/gif" ? "gif" : "jpg";
+      var id = USER.id + "/" + newId() + "." + ext;
+      return SB.storage.from("photos").upload(id, file, { contentType: type, cacheControl: "31536000" }).then(check).then(function () { return { id: id }; });
+    },
+    delete: function (id) { return SB.storage.from("photos").remove([id]).then(check); }
+  };
+
+  /* ---------- init ---------- */
+  function loadData() {
+    S.db = Store; S.assets = Assets; S.status = "loading"; render();
+    var loaded = { p: false, g: false };
+    function ready() { if (loaded.p && loaded.g && S.status !== "ready") { S.status = "ready"; render(); } else if (S.status === "ready") softRender(); }
+    Store.collection("pieces").onSnapshot(function (snap) {
+      S.pieces = merge("pieces", S.pieces, snap.docs); loaded.p = true; ready();
+    }, function (err) { console.error(err); if (!loaded.p) { S.status = "unavailable"; render(); } });
+    Store.collection("glazes").onSnapshot(function (snap) {
+      S.glazes = merge("glazes", S.glazes, snap.docs); loaded.g = true; ready();
+    }, function (err) { console.error(err); if (!loaded.g) { loaded.g = true; ready(); } });
+  }
+  document.addEventListener("submit", function (e) {
+    if (e.target.id !== "login-form") return;
+    e.preventDefault();
+    var email = $("li-email").value.trim(), pass = $("li-pass").value, err = $("li-err"), btn = $("li-btn");
+    if (!email || !pass) { err.textContent = "Enter your email and password."; err.hidden = false; return; }
+    btn.disabled = true; btn.textContent = "Signing in…"; err.hidden = true;
+    SB.auth.signInWithPassword({ email: email, password: pass }).then(function (r) {
+      if (r.error) {
+        btn.disabled = false; btn.textContent = "Sign in";
+        err.textContent = /invalid/i.test(r.error.message) ? "That email and password don’t match." : "Couldn’t sign in: " + r.error.message;
+        err.hidden = false; return;
+      }
+      USER = r.data.user; loadData();
+    });
+  });
+
+  render();
+  if (!CONFIG.url || !CONFIG.key || !window.supabase) {
+    S.status = "config"; render();
+  } else {
+    SB = window.supabase.createClient(CONFIG.url, CONFIG.key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
+    SB.auth.getSession().then(function (r) {
+      var sess = r.data && r.data.session;
+      if (sess) { USER = sess.user; loadData(); } else { S.status = "signed-out"; render(); }
+    }).catch(function () { S.status = "signed-out"; render(); });
+  }
+})();
+</script>
+</body>
+</html>
