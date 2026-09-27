@@ -307,6 +307,18 @@
   .ph-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .ph-tile .ph-lbl { position: absolute; left: 4px; bottom: 4px; font-size: 0.66rem; font-weight: 700; background: rgba(0,0,0,0.55); color: #fff; padding: 1px 6px; border-radius: 999px; }
   .ph-tile .star { position: absolute; right: 4px; top: 4px; font-size: 0.66rem; font-weight: 700; background: rgba(0,0,0,0.55); color: #fff; padding: 1px 6px; border-radius: 999px; }
+  .np-photos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .np-thumb { position: relative; width: 72px; height: 72px; border-radius: 8px; overflow: hidden; flex: none; }
+  .np-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .np-thumb button { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; display: grid; place-items: center; padding: 0; }
+  .np-add { width: 72px; height: 72px; flex: none; }
+  .layer-num {
+    width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    font-family: "JetBrains Mono", monospace; font-size: 0.8rem; font-weight: 500; background: var(--ink); color: var(--surface-2);
+  }
+  .app-order { display: flex; flex-direction: column; flex: none; }
+  .app-order .x-btn { width: 28px; height: 22px; border-radius: 6px; }
+  .app-order .x-btn:disabled { opacity: 0.25; cursor: default; }
   .ph-add { aspect-ratio: 1; border: 1.5px dashed var(--line); border-radius: 8px; background: none; color: var(--muted); display: grid; place-items: center; font-size: 0.8rem; font-weight: 600; text-align: center; padding: 6px; }
 
   .notes { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -412,7 +424,7 @@
   var ATMOS = ["Oxidation", "Reduction", "Soda", "Salt", "Wood", "Raku"];
   var KINDS = [["recipe", "My recipe"], ["studio", "Studio glaze"], ["commercial", "Commercial"]];
   var APPLY = ["Dipped", "Brushed", "Poured", "Sprayed", "Sponged", "Trailed", "Wax resist", "Underglaze"];
-  var AREAS = ["Whole piece", "Inside", "Outside", "Rim", "Lower half", "Layered over", "Foot"];
+  var AREAS = ["Whole piece", "Inside", "Outside", "Rim", "Top half", "Lower half", "Foot"];
 
   var S = {
     db: null, assets: null, status: "loading",
@@ -475,7 +487,7 @@
   function isDirty() { return (S.view === "piece" || S.view === "glaze") && Object.keys(S.draft).some(function (k) { var v = S.draft[k]; return !(k.charAt(0) === "_" && !String(v || "").trim()); }); }
   function initial(p) { return esc(((p.form || p.name || "?").trim()[0] || "?").toUpperCase()); }
   function appName(a) { var g = a.glazeId && glaze(a.glazeId); return g ? g.name : (a.glazeName || "Unnamed glaze"); }
-  function glazeSummary(p) { return (p.glazeApps || []).map(appName).join(" + "); }
+  function glazeSummary(p) { return (p.glazeApps || []).map(appName).join(" then "); }
   function sortPieces(list) { return list.slice().sort(function (a, b) { return String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")); }); }
   function optionList(arr, cur, blank) {
     var h = blank != null ? '<option value="">' + esc(blank) + "</option>" : "";
@@ -487,6 +499,8 @@
   var ICON = {
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     studio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M3 13h18M3 6h18M4 6v14M20 6v14"/><path d="M8 13v-3.2c0-.6.5-1.3 1.2-1.3h1.6c.7 0 1.2.7 1.2 1.3V13M14 20v-3.5c0-.8.7-1.5 1.5-1.5h.5c.8 0 1.5.7 1.5 1.5V20"/></svg>',
     pot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8M9 3c0 2-3 3.5-3 8 0 5 2.5 10 6 10s6-5 6-10c0-4.5-3-6-3-8"/><path d="M6.5 13h11"/></svg>',
@@ -753,13 +767,14 @@
 
     // Glazes
     var apps = p.glazeApps || [];
-    h += '<section class="panel"><div class="panel-head"><h3>Glazes</h3><button class="link-btn" data-a="add-app">+ Add glaze</button></div>';
-    h += apps.length ? '<div class="apps">' + apps.map(function (a) {
+    h += '<section class="panel"><div class="panel-head"><h3>Glaze layers</h3><button class="link-btn" data-a="add-app">' + (apps.length ? "+ Add layer " + (apps.length + 1) : "+ Add first glaze") + "</button></div>";
+    h += apps.length ? '<div class="apps">' + apps.map(function (a, i) {
       var g = a.glazeId && glaze(a.glazeId);
       var meta = [a.method, a.coats ? a.coats + (a.coats == 1 ? " coat" : " coats") : "", a.area].filter(Boolean).join(" · ");
-      return '<div class="app">' + swatch(g) + '<button class="app-text" data-a="edit-app" data-id="' + a.id + '"><div class="app-name">' + esc(appName(a)) + '</div><div class="app-meta">' + esc(meta) + (a.notes ? " · " + esc(a.notes) : "") + "</div></button>" +
-        (g ? '<button class="link-btn" data-a="open-glaze" data-id="' + g.id + '">Recipe</button>' : "") + "</div>";
-    }).join("") + "</div>" : '<p class="hint" style="margin:0">No glazes yet. Add them in the order you applied them.</p>';
+      var order = apps.length > 1 ? '<span class="app-order"><button class="x-btn" data-a="app-up" data-i="' + i + '" aria-label="Move layer up"' + (i === 0 ? " disabled" : "") + ">" + ICON.up + '</button><button class="x-btn" data-a="app-down" data-i="' + i + '" aria-label="Move layer down"' + (i === apps.length - 1 ? " disabled" : "") + ">" + ICON.down + "</button></span>" : "";
+      return '<div class="app"><span class="layer-num" aria-label="Layer ' + (i + 1) + '">' + (i + 1) + "</span>" + swatch(g) + '<button class="app-text" data-a="edit-app" data-id="' + a.id + '"><div class="app-name">' + esc(appName(a)) + '</div><div class="app-meta">' + esc(i ? "Over layer " + i + (meta ? " · " : "") : "") + esc(meta) + (a.notes ? " · " + esc(a.notes) : "") + "</div></button>" +
+        (g ? '<button class="link-btn" data-a="open-glaze" data-id="' + g.id + '">Recipe</button>' : "") + order + "</div>";
+    }).join("") + '</div><p class="hint">Layer 1 went on first. Tap a layer to edit it; use the arrows to reorder.</p>' : '<p class="hint" style="margin:0">Add each glaze in the order you applied it. Layering? Add the first glaze, then add the next one as layer 2.</p>';
     h += "</section>";
 
     // Tools
@@ -848,8 +863,15 @@
   function fmtNum(n) { return (Math.round(n * 100) / 100).toString(); }
 
   /* ---------- sheets ---------- */
+  function npPhotosHtml() {
+    var files = (S.sheet && S.sheet.files) || [];
+    return files.map(function (f, i) {
+      return '<span class="np-thumb"><img src="' + f.url + '" alt=""><button type="button" data-a="np-rm-photo" data-i="' + i + '" aria-label="Remove photo">' + ICON.x.replace("<svg", '<svg width="12" height="12"') + "</button></span>";
+    }).join("") + '<button type="button" class="ph-add np-add" data-a="np-add-photo">+ Add photos</button>';
+  }
+  function freeSheetFiles(s) { ((s && s.files) || []).forEach(function (f) { try { URL.revokeObjectURL(f.url); } catch (e) {} }); }
   function openSheet(s) { S.sheet = s; renderSheet(); }
-  function closeSheet() { S.sheet = null; renderSheet(); if (S.pending) softRender(); }
+  function closeSheet() { freeSheetFiles(S.sheet); S.sheet = null; renderSheet(); if (S.pending) softRender(); }
   function renderSheet() {
     var root = $("sheet-root");
     var s = S.sheet;
@@ -864,6 +886,7 @@
         '<div class="field"><label for="np-stage">Where is it now?</label><select id="np-stage">' + optionList(STAGES.map(function (x) { return [x.key, x.label]; }), "wet") + "</select></div>" +
         '<div class="field"><label for="np-since">Put there on</label><input id="np-since" type="date" value="' + todayISO() + '"></div>' +
         '<div class="field"><label for="np-date">Started</label><input id="np-date" type="date" value="' + todayISO() + '"></div>' +
+        (S.assets ? '<div class="field full"><label>Photos</label><div class="np-photos" id="np-photos">' + npPhotosHtml() + "</div></div>" : "") +
         '</div><div class="actions"><button class="btn" data-a="close-sheet">Cancel</button><button class="btn primary" data-a="create-piece">Add piece</button></div>';
     } else if (s.type === "new-glaze") {
       h = '<h2 id="sh-title">New glaze</h2><div class="fields stack-sm">' +
@@ -873,17 +896,23 @@
         '</div><div class="actions"><button class="btn" data-a="close-sheet">Cancel</button><button class="btn primary" data-a="create-glaze">Add glaze</button></div>';
     } else if (s.type === "app") {
       var p = piece(S.id); var a = s.appId ? (p.glazeApps || []).find(function (x) { return x.id === s.appId; }) : null;
+      var appsNow = p.glazeApps || [];
+      var layerNo = s.appId ? appsNow.findIndex(function (x) { return x.id === s.appId; }) + 1 : appsNow.length + 1;
+      var under = layerNo > 1 ? appsNow[layerNo - 2] : null;
       a = a || { method: "Dipped", coats: "1", area: "Whole piece" };
+      var areas = a.area && AREAS.indexOf(a.area) < 0 ? AREAS.concat([a.area]) : AREAS;
       var gl = S.glazes.slice().sort(function (x, y) { return String(x.name).localeCompare(String(y.name)); });
       var sel = a.glazeId || (s.appId ? "__custom" : (gl[0] ? gl[0].id : "__new"));
-      h = '<h2 id="sh-title">' + (s.appId ? "Edit glaze" : "Add a glaze") + '</h2><div class="fields stack-sm">' +
+      h = '<h2 id="sh-title">' + (s.appId ? "Edit layer " + layerNo : layerNo === 1 ? "Add first glaze" : "Add layer " + layerNo) + "</h2>" +
+        (under ? '<p style="margin:-6px 0 14px">Goes over layer ' + (layerNo - 1) + ": " + esc(appName(under)) + "</p>" : "") +
+        '<div class="fields stack-sm">' +
         '<div class="field full"><label for="ap-glaze">Glaze</label><select id="ap-glaze">' +
         gl.map(function (g) { return '<option value="' + g.id + '"' + (sel === g.id ? " selected" : "") + ">" + esc(g.name || "Untitled glaze") + (g.cone ? " (cone " + esc(g.cone) + ")" : "") + "</option>"; }).join("") +
         '<option value="__new"' + (sel === "__new" || sel === "__custom" ? " selected" : "") + ">New glaze, not in my library…</option></select></div>" +
         '<div class="field full" id="ap-new-wrap"' + (sel === "__new" || sel === "__custom" ? "" : " hidden") + '><label for="ap-newname">New glaze name</label><input id="ap-newname" value="' + esc(a.glazeId ? "" : a.glazeName) + '" placeholder="e.g. Studio Celadon"><p class="hint">It’ll be added to your glaze library so you can fill in the recipe later.</p></div>' +
         '<div class="field"><label for="ap-method">Applied by</label><select id="ap-method">' + optionList(APPLY, a.method) + "</select></div>" +
         '<div class="field"><label for="ap-coats">Coats / dip seconds</label><input id="ap-coats" inputmode="decimal" value="' + esc(a.coats) + '"></div>' +
-        '<div class="field full"><label for="ap-area">Where on the piece</label><select id="ap-area">' + optionList(AREAS, a.area) + "</select></div>" +
+        '<div class="field full"><label for="ap-area">Where on the piece</label><select id="ap-area">' + optionList(areas, a.area) + "</select></div>" +
         '<div class="field full"><label for="ap-notes">Notes</label><input id="ap-notes" value="' + esc(a.notes) + '" placeholder="e.g. 3-second dip, wiped 1cm from foot"></div>' +
         '</div><div class="actions">' + (s.appId ? '<button class="btn danger" data-a="rm-app">Remove</button>' : '<button class="btn" data-a="close-sheet">Cancel</button>') +
         '<button class="btn primary" data-a="save-app">' + (s.appId ? "Save" : "Add") + "</button></div>";
@@ -991,10 +1020,12 @@
       createdAt: now, updatedAt: now
     };
     var btn = document.querySelector('[data-a="create-piece"]'); if (btn) btn.disabled = true;
+    var picked = ((S.sheet && S.sheet.files) || []).map(function (f) { return f.file; });
     S.db.collection("pieces").add(data).then(function (ref) {
       S.pieces.push(Object.assign({ id: ref.id }, data));
-      S.sheet = null; renderSheet();
+      freeSheetFiles(S.sheet); S.sheet = null; renderSheet();
       go("piece", ref.id);
+      if (picked.length) { S.photoTarget = { kind: "piece", id: ref.id }; handleFiles(picked); }
     }).catch(function (e) { if (btn) btn.disabled = false; writeErr(e); });
   }
   function createGlaze(name, kind, cone) {
@@ -1071,6 +1102,12 @@
   async function handleFiles(files) {
     var t = S.photoTarget; S.photoTarget = null;
     if (!t || !S.assets || !files.length) return;
+    if (t.kind === "new") {
+      if (!S.sheet || S.sheet.type !== "new-piece") return;
+      S.sheet.files = (S.sheet.files || []).concat(files.map(function (f) { return { file: f, url: URL.createObjectURL(f) }; }));
+      var box = $("np-photos"); if (box) box.innerHTML = npPhotosHtml();
+      return;
+    }
     if (t.kind === "glaze") files = files.slice(0, 1);
     var ids = [], failMsg = "";
     for (var i = 0; i < files.length; i++) {
@@ -1277,6 +1314,21 @@
         toast("Note deleted", function () { patchPiece(p.id, { notes: removed }); render(); });
         break;
       case "add-app": openSheet({ type: "app" }); break;
+      case "app-up":
+      case "app-down":
+        if (!p) return;
+        var ai = +el.getAttribute("data-i"), aj = a === "app-up" ? ai - 1 : ai + 1;
+        var list = (p.glazeApps || []).slice();
+        if (aj < 0 || aj >= list.length) return;
+        var tmp = list[ai]; list[ai] = list[aj]; list[aj] = tmp;
+        patchPiece(p.id, { glazeApps: list }); render(); break;
+      case "np-add-photo":
+        S.photoTarget = { kind: "new" }; $("photo-input").multiple = true; $("photo-input").click(); break;
+      case "np-rm-photo":
+        if (!S.sheet || !S.sheet.files) return;
+        var gone = S.sheet.files.splice(+el.getAttribute("data-i"), 1)[0];
+        if (gone) { try { URL.revokeObjectURL(gone.url); } catch (err) {} }
+        var bx = $("np-photos"); if (bx) bx.innerHTML = npPhotosHtml(); break;
       case "edit-app": openSheet({ type: "app", appId: id }); break;
       case "save-app": saveApp(); break;
       case "rm-app":
